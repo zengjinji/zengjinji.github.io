@@ -1,0 +1,8 @@
+{{ define "main" }}
+<section class="page-heading"><p class="eyebrow">{{ if eq .Kind "taxonomy" }}TOPICS{{ else if eq .Kind "term" }}TOPIC{{ else }}THE ARCHIVE{{ end }}</p><h1>{{ .Title }}</h1><p>{{ .Description | default "把零散的思考整理成篇，留给下一次需要的时候。" }}</p></section>
+{{ if eq .Kind "taxonomy" }}
+<div class="term-grid">{{ range .Pages.ByTitle }}<a class="term-card" href="{{ .RelPermalink }}"><span># {{ .LinkTitle }}</span><span>{{ len .RegularPages }} 篇 <span aria-hidden="true">↗</span></span></a>{{ end }}</div>
+{{ else }}
+<section class="archive-posts" aria-label="文章列表">{{ $paginator := .Paginate .RegularPages.ByDate.Reverse }}{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ else }}<p>这里还没有文章。先去<a href="{{ site.Home.RelPermalink }}">首页</a>看看吧。</p>{{ end }}{{ partial "pagination.html" $paginator }}</section>
+{{ end }}
+{{ end }}

@@ -1,0 +1,38 @@
+baseURL = 'https://zengjinji.github.io/'
+locale = 'zh-CN'
+defaultContentLanguage = 'zh-cn'
+title = 'zengjinji · 技术手记'
+timeZone = 'Asia/Shanghai'
+hasCJKLanguage = true
+enableRobotsTXT = true
+summaryLength = 100
+
+[pagination]
+  pagerSize = 8
+
+[permalinks]
+  posts = '/posts/:slug/'
+
+[taxonomies]
+  tag = 'tags'
+
+[params]
+  author = 'zengjinji'
+  description = '记录技术实践、阅读笔记与日常思考。'
+  github = 'https://github.com/zengjinji'
+
+[markup]
+  [markup.highlight]
+    style = 'github-dark'
+    noClasses = false
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false
+
+[outputs]
+  home = ['HTML', 'RSS']
+
+[caches]
+  [caches.images]
+    dir = ':cacheDir/images'

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ if not .IsHome }}{{ .Title }} · {{ end }}{{ site.Title }}</title>
+  <meta name="description" content="{{ .Description | default site.Params.description }}">
+  <meta name="author" content="{{ site.Params.author }}">
+  <meta name="theme-color" content="#f7f8fa">
+  <link rel="canonical" href="{{ .Permalink }}">
+  <meta property="og:title" content="{{ .Title | default site.Title }}">
+  <meta property="og:description" content="{{ .Description | default site.Params.description }}">
+  <meta property="og:url" content="{{ .Permalink }}">
+  <meta property="og:type" content="{{ if eq .Section "posts" }}article{{ else }}website{{ end }}">
+  <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ "css/main.css" | relURL }}">
+  {{ range .AlternativeOutputFormats }}<link rel="alternate" type="{{ .MediaType.Type }}" title="{{ site.Title }}" href="{{ .Permalink }}">{{ end }}
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header wrapper">
+    <a class="brand" href="{{ site.Home.RelPermalink }}" aria-label="zengjinji 首页"><span class="brand-mark">zj<span>.</span></span><span>zengjinji<span class="brand-sub"> / 技术手记</span></span></a>
+    <nav aria-label="主导航">
+      <a {{ if or .IsHome (eq .Section "posts") }}aria-current="page"{{ end }} href="{{ "posts/" | relURL }}">文章</a>
+      <a {{ if eq .Section "tags" }}aria-current="page"{{ end }} href="{{ "tags/" | relURL }}">标签</a>
+      <a {{ if eq .RelPermalink "/about/" }}aria-current="page"{{ end }} href="{{ "about/" | relURL }}">关于</a>
+      <a class="rss-link" href="{{ "index.xml" | relURL }}" aria-label="RSS 订阅">RSS <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+  <main id="main" class="wrapper">{{ block "main" . }}{{ end }}</main>
+  <footer class="site-footer wrapper"><span>© {{ now.Year }} zengjinji<span class="footer-sep"> · </span>保持好奇，持续记录。</span><span>由 <a href="https://gohugo.io/">Hugo</a> 构建 · <a href="https://pages.github.com/">GitHub Pages</a> 托管</span></footer>
+</body>
+</html>

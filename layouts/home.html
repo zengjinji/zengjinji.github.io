@@ -1,0 +1,23 @@
+{{ define "main" }}
+<section class="hero">
+  <div class="eyebrow"><span class="status-dot"></span> NOTES ON TECH & EVERYDAY LEARNING</div>
+  <h1>把折腾的过程，<br>写成<span>可复用的经验。</span></h1>
+  <p>记录技术实践、阅读笔记与日常思考。<br class="desktop-break">让遇到的问题有迹可循，让学到的东西慢慢沉淀。</p>
+  <a class="text-link" href="#writing">开始阅读 <span aria-hidden="true">↓</span></a>
+  <span class="hero-decoration" aria-hidden="true">&lt; / &gt;</span>
+</section>
+<div class="home-grid">
+<section id="writing" class="writing-section">
+  <div class="section-heading"><h2>最近的记录 <span>LATEST WRITING</span></h2><span class="count">{{ len (where site.RegularPages "Section" "posts") }} 篇</span></div>
+  {{ $paginator := .Paginate (where site.RegularPages "Section" "posts") }}
+  {{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ end }}
+  {{ partial "pagination.html" $paginator }}
+  <a class="archive-link" href="{{ "posts/" | relURL }}">查看全部文章 <span aria-hidden="true">↗</span></a>
+</section>
+<aside class="sidebar" aria-label="博客信息">
+  <section class="about-card"><div class="avatar" aria-hidden="true">zj.</div><p class="eyebrow">HELLO, I'M</p><h2>zengjinji</h2><p>这里是一方用来整理思路的小空间。写下过程，也留下答案。</p><a class="text-link" href="{{ "about/" | relURL }}">关于这个博客 <span aria-hidden="true">↗</span></a></section>
+  <section class="side-section"><h2>按标签探索</h2><div class="tag-cloud">{{ range site.Taxonomies.tags.Alphabetical }}<a href="{{ .Page.RelPermalink }}">{{ .Page.LinkTitle }} <span>{{ .Count }}</span></a>{{ end }}</div></section>
+  <section class="subscribe-card"><span class="small-symbol" aria-hidden="true">↗</span><h2>让新文章来找你</h2><p>用你喜欢的 RSS 阅读器，订阅这里的更新。</p><a class="text-link" href="{{ "index.xml" | relURL }}">订阅 RSS <span aria-hidden="true">→</span></a></section>
+</aside>
+</div>
+{{ end }}

@@ -1,0 +1,17 @@
+{{ define "main" }}
+<div class="article-layout">
+<article class="article">
+  <a class="back-link" href="{{ if eq .Section "posts" }}{{ "posts/" | relURL }}{{ else }}{{ site.Home.RelPermalink }}{{ end }}">← {{ if eq .Section "posts" }}全部文章{{ else }}返回首页{{ end }}</a>
+  <header class="article-header">
+    {{ if eq .Section "posts" }}<div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time><span aria-hidden="true">/</span><span>{{ .ReadingTime }} 分钟阅读</span>{{ if .Params.example }}<span class="example-badge">示例文章</span>{{ end }}</div>{{ end }}
+    <h1>{{ .Title }}</h1>
+    {{ with .Description }}<p class="article-description">{{ . }}</p>{{ end }}
+    <div class="post-tags">{{ range .GetTerms "tags" }}<a href="{{ .RelPermalink }}"># {{ .LinkTitle }}</a>{{ end }}</div>
+  </header>
+  <div class="prose">{{ .Content }}</div>
+  {{ if eq .Section "posts" }}<footer class="article-end"><span>写于 {{ .Date.Format "2006 年 01 月 02 日" }} · {{ site.Params.author }}</span><a href="{{ "index.xml" | relURL }}">订阅后续文章 ↗</a></footer>
+  <nav class="post-navigation" aria-label="相邻文章">{{ with .PrevInSection }}<a href="{{ .RelPermalink }}"><span>← 较早的记录</span>{{ .Title }}</a>{{ end }}{{ with .NextInSection }}<a href="{{ .RelPermalink }}"><span>较新的记录 →</span>{{ .Title }}</a>{{ end }}</nav>{{ end }}
+</article>
+{{ if and (eq .Section "posts") (gt (len .Fragments.Headings) 0) }}<aside class="article-toc" aria-label="文章目录"><p class="eyebrow">ON THIS PAGE</p>{{ .TableOfContents }}<a class="back-top" href="#main">回到顶部 ↑</a></aside>{{ end }}
+</div>
+{{ end }}
