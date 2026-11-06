@@ -41,7 +41,7 @@ summaryLength = 100
 
 [markup]
   [markup.highlight]
-    style = 'github'
+    style = 'github-dark'
     noClasses = false
   [markup.tableOfContents]
     startLevel = 2
