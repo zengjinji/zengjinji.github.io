@@ -38,8 +38,6 @@ cd /root/github/hugo
 
 图片可放到文章的 `index.md` 旁，用 `![图片说明](example.png)` 引用。
 
-现有三篇文章标记为“示例”，可删除或改写；正式文章去掉 `example = true` 即可。
-
 ## 首次启用 GitHub Pages
 
 1. 把本目录的源码提交并推送到仓库 `main` 分支（见下方）。

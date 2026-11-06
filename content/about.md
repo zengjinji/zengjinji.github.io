@@ -16,8 +16,6 @@ description = '一个用来记录、整理与分享的小空间。'
 
 博客使用 [Hugo](https://gohugo.io/) 生成静态页面，通过 [GitHub Pages](https://pages.github.com/) 发布。文章以 Markdown 保存，页面不依赖外部字体和脚本。
 
-目前的三篇文章是搭建时加入的**示例内容**，用于展示文章、代码、目录和标签的效果；可以直接修改或删除。
-
 ## 保持联系
 
 - [GitHub：zengjinji](https://github.com/zengjinji)
