@@ -2,7 +2,7 @@
 
 Hugo 中英文博客源码。默认英文首页：<https://zengjinji.github.io/>；中文首页：<https://zengjinji.github.io/zh/>。
 
-- 本地源码目录：`/root/github/hugo`
+- 本地源码目录：`/root/github/zengjinji.github.io`
 - GitHub 仓库：<https://github.com/zengjinji/zengjinji.github.io>
 - 生成目录：`public/`（不提交，GitHub Actions 自动生成）
 - Hugo 版本：`.hugo-version`，本地与 CI 共用
@@ -11,7 +11,7 @@ Hugo 中英文博客源码。默认英文首页：<https://zengjinji.github.io/>
 ## 本地预览
 
 ```bash
-cd /root/github/hugo
+cd /root/github/zengjinji.github.io
 ./scripts/hugo.sh server -D --bind 127.0.0.1
 ```
 
@@ -44,7 +44,7 @@ ssh -L 1313:127.0.0.1:1313 root@你的服务器地址
 ## 新建文章
 
 ```bash
-cd /root/github/hugo
+cd /root/github/zengjinji.github.io
 ./scripts/hugo.sh new content posts/my-first-note/index.en.md
 ./scripts/hugo.sh new content posts/my-first-note/index.zh.md
 ```
@@ -66,7 +66,7 @@ cd /root/github/hugo
 ## 后续发布
 
 ```bash
-cd /root/github/hugo
+cd /root/github/zengjinji.github.io
 # 先预览和构建
 ./scripts/hugo.sh --gc --minify --panicOnWarning
 # 仅暂存本次需要发布的文件
@@ -111,4 +111,4 @@ GitHub 云端构建不使用本地代理地址。网页资源均位于本站，�
 | 新文章模板 | `archetypes/default.md` |
 | 自动部署 | `.github/workflows/hugo.yaml` |
 
-`/root/github/zengjinji.github.io` 是原有 checkout，本次源码在 `/root/github/hugo`。后续请在 `/root/github/hugo` 写作和推送，以免混淆两个工作目录。
+本仓库的本地工作目录为 `/root/github/zengjinji.github.io`。后续在此目录写作、预览和推送。
