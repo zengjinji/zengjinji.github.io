@@ -134,38 +134,42 @@ In outline, LuaJIT's compilation process is: load a Lua file → convert it to b
 
 Here is an excerpt from `jit.dump`:
 
-    ---- TRACE 43 start 5/1 lrucache.lua:90
-    0031  TSETS    7   2   1  ; "next"       (lrucache.lua:90)
-    0000  . . FUNCC               ; ffi.meta.__newindex
-    0032  TSETS    2   7   0  ; "prev"       (lrucache.lua:91)
-    0000  . . FUNCC               ; ffi.meta.__newindex
-    0033  MOV      2   7       (lrucache.lua:92)
-    0034  JFORL    3   5       (lrucache.lua:87)
-    ---- TRACE 43 IR
-    0001 x27      int SLOAD  #5    PI
-    0002 x28      int SLOAD  #6    PRI
-    0003 x25      p64 PVAL   #10
-    0004 [8]      cdt CNEWI  +161  0003
-    ....              SNAP   #0   [ ---- ---- ---- ---- ---- 0001 0002 +1   ---- 0004 ---- ]
-    ...........
-    ---- TRACE 43 mcode 188
-    ffff8d5bfa60  mov   x25, x28
-    ffff8d5bfa74  mov   w1, #16
-    ...
-    ffff8d5bfb10  add   x30, x0, x1, lsl #47
-    ffff8d5bfb14  str   x30, [x19, #16]
-    ffff8d5bfb18  b     0x8d5cfc0c
-    ---- TRACE 43 stop -> 5
+```text
+---- TRACE 43 start 5/1 lrucache.lua:90
+0031  TSETS    7   2   1  ; "next"       (lrucache.lua:90)
+0000  . . FUNCC               ; ffi.meta.__newindex
+0032  TSETS    2   7   0  ; "prev"       (lrucache.lua:91)
+0000  . . FUNCC               ; ffi.meta.__newindex
+0033  MOV      2   7       (lrucache.lua:92)
+0034  JFORL    3   5       (lrucache.lua:87)
+---- TRACE 43 IR
+0001 x27      int SLOAD  #5    PI
+0002 x28      int SLOAD  #6    PRI
+0003 x25      p64 PVAL   #10
+0004 [8]      cdt CNEWI  +161  0003
+....              SNAP   #0   [ ---- ---- ---- ---- ---- 0001 0002 +1   ---- 0004 ---- ]
+...........
+---- TRACE 43 mcode 188
+ffff8d5bfa60  mov   x25, x28
+ffff8d5bfa74  mov   w1, #16
+...
+ffff8d5bfb10  add   x30, x0, x1, lsl #47
+ffff8d5bfb14  str   x30, [x19, #16]
+ffff8d5bfb18  b     0x8d5cfc0c
+---- TRACE 43 stop -> 5
+```
 
 ### 3.2 Replaying the ARM64 infinite loop with Python and Unicorn
 
 After a worker became stuck, we sent it `kill -6` to generate a core dump. We opened the core in GDB and inspected the backtrace with `bt`:
 
-    (gdb) bt
-    #0  0x0000ffff8d4072e8 in ?? ()
-    #1  0x0000ffe5181ddb80 in ?? ()
-    #2  0x0000000001447740 in ?? ()
-    #3  0x0000000000000000 in ?? (
+```text
+(gdb) bt
+#0  0x0000ffff8d4072e8 in ?? ()
+#1  0x0000ffe5181ddb80 in ?? ()
+#2  0x0000000001447740 in ?? ()
+#3  0x0000000000000000 in ?? (
+```
 
 The function names are all `??`. GDB can read registers and memory from the core, but LuaJIT's runtime-generated machine code does not have the same complete debug symbols as an ordinary C function. As a result, `bt` often shows only machine-code addresses, without identifying the corresponding Lua source line.
 
@@ -173,7 +177,7 @@ In this affected worker, frame `#0`, at `0x0000ffff8d4072e8`, is the address cur
 
 For comparison, a normal backtrace looks like this:
 
-```(gdb) bt
+```text
 #0  epoll_wait (epfd=5, events=0x145acc0, maxevents=512, timeout=timeout@entry=63979) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
 #1  0x000000000044b808 in ngx_epoll_process_events (cycle=0x14d1f60, timer=63979, flags=1) at src/event/modules/ngx_epoll_module.c:800
 #2  0x0000000000442d56 in ngx_process_events_and_timers (cycle=cycle@entry=0x14d1f60) at src/event/ngx_event.c:257
@@ -191,7 +195,7 @@ We then wrote a Python script to read the register state from the core and emula
 
 We searched the JIT log at `/tmp/luajit-traces.log` for `ffff8d4072e8` and found that it was the start address of trace 2235. The relevant excerpts were:
 
-```(gdb) bt
+```text
 ---- TRACE 60 start captcha_map.lua:278
 ---- TRACE 60 IR
 ffff8d5c8118 mov x7, #0x3a98
@@ -273,9 +277,11 @@ b    <jump back to trace 60>      ; But the str for slot 8 is missing
 
 The corresponding IR snapshot included:
 
-    0023 x26 int ADD 0001 +1 ...
-    SNAP #3   [ ---- ---- ---- ---- ---- ---- ---- ---- 0023 0023 0028 ]
-                                                        slot8 slot9 slot10
+```text
+0023 x26 int ADD 0001 +1 ...
+SNAP #3   [ ---- ---- ---- ---- ---- ---- ---- ---- 0023 0023 0028 ]
+                                                    slot8 slot9 slot10
+```
 
 The first line is straightforward: **increment the loop index by one**. `SNAP` records the Lua state that must be restored when a trace exits and in related situations. It is not a one-to-one list of machine instructions, but it helps us check whether computed values are propagated correctly.
 
@@ -290,37 +296,41 @@ First, two instructions are worth spelling out:
 
 **Normal execution:**
 
-    TRACE 60
-        Read idx from slot 8; assume its current value is 1
-            ↓
-    TRACE 64
-        Continue the loop body and advance the index
-            ↓
-    TRACE 2235
-        Assume the newly calculated idx is 4
-        Execute STR, writing the new index 4 back to slot 8
-            ↓
-    Jump back to TRACE 60
-        Read idx = 4 from slot 8
-        Continue or terminate iteration using the updated index
+```text
+TRACE 60
+    Read idx from slot 8; assume its current value is 1
+        ↓
+TRACE 64
+    Continue the loop body and advance the index
+        ↓
+TRACE 2235
+    Assume the newly calculated idx is 4
+    Execute STR, writing the new index 4 back to slot 8
+        ↓
+Jump back to TRACE 60
+    Read idx = 4 from slot 8
+    Continue or terminate iteration using the updated index
+```
 
 **Faulty execution, with one `STR` missing from trace 2235:**
 
-    TRACE 60
-        Read idx = 1 from slot 8
-            ↓
-    TRACE 64
-        Continue the loop body and advance the index
-            ↓
-    TRACE 2235
-        Calculate the new idx = 4
-        STR is missing, so slot 8 is not updated
-            ↓
-    Jump back to TRACE 60
-        Read idx from slot 8; it is still 1
-            ↓
-    TRACE 64 → TRACE 2235 → TRACE 60
-        Repeat indefinitely
+```text
+TRACE 60
+    Read idx = 1 from slot 8
+        ↓
+TRACE 64
+    Continue the loop body and advance the index
+        ↓
+TRACE 2235
+    Calculate the new idx = 4
+    STR is missing, so slot 8 is not updated
+        ↓
+Jump back to TRACE 60
+    Read idx from slot 8; it is still 1
+        ↓
+TRACE 64 → TRACE 2235 → TRACE 60
+    Repeat indefinitely
+```
 
 **The essential problem was that the new loop index had been calculated in a register but had not been written back to the Lua stack.**
 
@@ -356,29 +366,33 @@ Our initial hypothesis was therefore that the missing `str` might have been gene
 
 We examined three consecutive traces in the `jit.dump` output:
 
-    ---- TRACE 2233 mcode 128
-    ffff8d40747c ldr x30, [x22, #368]
-    ......
-    ffff8d4074f8 b   0x8c6bcd28
-    ---- TRACE 2233 stop -> interpreter
+```text
+---- TRACE 2233 mcode 128
+ffff8d40747c ldr x30, [x22, #368]
+......
+ffff8d4074f8 b   0x8c6bcd28
+---- TRACE 2233 stop -> interpreter
 
-    ---- TRACE 2234 mcode 24
-    ffff8d40744c mov x0, #0
-    ......
-    ffff8d407460 b   0x8c6bcd28
-    ---- TRACE 2234 stop -> interpreter
+---- TRACE 2234 mcode 24
+ffff8d40744c mov x0, #0
+......
+ffff8d407460 b   0x8c6bcd28
+---- TRACE 2234 stop -> interpreter
 
-    ---- TRACE 2235 mcode 320
-    ffff8d4072e8 mov x27, x26
-    ......
-    ffff8d407424 b   0x8d5c8118
-    ---- TRACE 2235 stop -> 60
+---- TRACE 2235 mcode 320
+ffff8d4072e8 mov x27, x26
+......
+ffff8d407424 b   0x8d5c8118
+---- TRACE 2235 stop -> 60
+```
 
 <!---->
 
-    TRACE 2233: ffff8d40747c ... ffff8d4074f8
-    TRACE 2234: ffff8d40744c ... ffff8d407460
-    TRACE 2235: ffff8d4072e8 ... ffff8d407424
+```text
+TRACE 2233: ffff8d40747c ... ffff8d4074f8
+TRACE 2234: ffff8d40744c ... ffff8d407460
+TRACE 2235: ffff8d4072e8 ... ffff8d407424
+```
 
 The code addresses of these traces become progressively lower. LuaJIT's ARM64 assembler emits instructions from higher addresses toward lower addresses. This raised a question: could different compilation attempts reuse memory that had previously been occupied?
 
@@ -390,17 +404,19 @@ That suggested another possibility: **if a previous compilation failed partway t
 
 The production logs contained many entries like these:
 
-    ---- TRACE 2235 abort sbw_preload_up_rewrite_pre.lua:47
-    ---- TRACE 2235 start config.lua:569
-    ---- TRACE 2235 abort config.lua:590
-    ---- TRACE 2235 start ssl_cert_by.lua:108
-    ---- TRACE 2235 abort ssl_cert_by.lua:140
+```text
+---- TRACE 2235 abort sbw_preload_up_rewrite_pre.lua:47
+---- TRACE 2235 start config.lua:569
+---- TRACE 2235 abort config.lua:590
+---- TRACE 2235 start ssl_cert_by.lua:108
+---- TRACE 2235 abort ssl_cert_by.lua:140
+```
 
 An `abort` means that the trace compilation did not succeed. The corresponding machine-code space can be reused by later compilations, but the previously written bytes are not cleared.
 
 The relevant code included the following:
 
-```
+```c
 static int trace_abort(jit_State *J)
 {
   ....
@@ -435,12 +451,16 @@ Consequently, if a trace has already reached machine-code generation and written
 
 In `lj_emit_arm64.h`, we focused on the optimization in `emit_lso()` that combines adjacent `LDR`/`STR` instructions into `LDP`/`STP`. For example:
 
-    str x4,  [x19, #48]
-    str x30, [x19, #56]
+```asm
+str x4,  [x19, #48]
+str x30, [x19, #56]
+```
 
 When the pairing conditions are satisfied, these can be combined into one `STP`:
 
-    stp x4, x30, [x19, #48]
+```asm
+stp x4, x30, [x19, #48]
+```
 
 This is normally a valid optimization. But **what if the instruction selected as a pairing candidate was not generated by the current compilation at all, but was stale content left in memory?**
 
@@ -448,10 +468,12 @@ This is normally a valid optimization. But **what if the instruction selected as
 
 In the older `asm_tail_prep()` in `lj_asm_arm64.h`, the non-loop branch reserves two slots: one for a later branch and another for stack-pointer adjustment.
 
-    MCode *p = as->mctop - 1;
-    as->mcp = p - 1;
-    as->invmcp = NULL;
-    *p = 0;
+```c
+MCode *p = as->mctop - 1;
+as->mcp = p - 1;
+as->invmcp = NULL;
+*p = 0;
+```
 
 Only `*p` is cleared here; `p[-1]` is not. Meanwhile, `as->mcp` points exactly to `p[-1]`.
 
@@ -467,92 +489,94 @@ Combining these observations, we modeled the following scenario:
 
 <!---->
 
-    Initial state: J->mctop = T
-    (T-1 and T-2 are adjacent instruction slots, each four bytes wide)
+```text
+Initial state: J->mctop = T
+(T-1 and T-2 are adjacent instruction slots, each four bytes wide)
 
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Step 1: a trace starts assembly, then aborts
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step 1: a trace starts assembly, then aborts
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    asm_tail_prep:
-    p = T-1
-    mcp = T-2 (two reserved slots: T-1 is zeroed; T-2 is not)
+asm_tail_prep:
+p = T-1
+mcp = T-2 (two reserved slots: T-1 is zeroed; T-2 is not)
 
-    *--mcp = ... mcp = T-3 ← instruction 1
-    *--mcp = ... mcp = T-4 ← instruction 2
-    *--mcp = ... mcp = T-5 ← instruction 3
-    *--mcp = ... mcp = T-6 ← instruction 4 (str x30, [x19, #56]) ← target!
-    *--mcp = ... mcp = T-7 ← instruction 5
+*--mcp = ... mcp = T-3 ← instruction 1
+*--mcp = ... mcp = T-4 ← instruction 2
+*--mcp = ... mcp = T-5 ← instruction 3
+*--mcp = ... mcp = T-6 ← instruction 4 (str x30, [x19, #56]) ← target!
+*--mcp = ... mcp = T-7 ← instruction 5
 
-    Abort! This compilation is not committed.
-    Later traces can reuse the space, but the bytes are not cleared.
+Abort! This compilation is not committed.
+Later traces can reuse the space, but the bytes are not cleared.
 
-    Memory now:
-    T-1: 0 ← cleared by asm_tail_prep
-    T-2: [not cleared; may contain old data]
-    T-3: instruction left behind by the aborted compilation
-    T-4: instruction left behind by the aborted compilation
-    T-5: instruction left behind by the aborted compilation
-    T-6: str x30, [x19, #56] ← left behind by the aborted compilation ★
-    T-7: instruction left behind by the aborted compilation
-
-
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Step 2: another, shorter trace compiles successfully
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    This trace emits only two ordinary instructions.
-    asm_tail_prep: mcp = T-2
-    *--mcp = ... mcp = T-3 ← overwrites the old instruction at T-3
-    *--mcp = ... mcp = T-4 ← overwrites the old instruction at T-4
-    asm_tail_fixup: T-1 = NOP, T-2 = branch ← writes the tail branch
-
-    Compilation succeeds; J->mctop = T-4
-    (Assume a non-loop trace with spadj = 0.)
-
-    Memory now:
-    T-1: NOP ← written by the successful trace
-    T-2: branch ← written by the successful trace
-    T-3: instruction from the successful trace ← overwrites the old bytes
-    T-4: instruction from the successful trace ← overwrites the old bytes
-    T-5: instruction from the aborted compilation ← untouched
-    T-6: str x30, [x19, #56] ← stale instruction, still untouched! ★
-    T-7: instruction from the aborted compilation
+Memory now:
+T-1: 0 ← cleared by asm_tail_prep
+T-2: [not cleared; may contain old data]
+T-3: instruction left behind by the aborted compilation
+T-4: instruction left behind by the aborted compilation
+T-5: instruction left behind by the aborted compilation
+T-6: str x30, [x19, #56] ← left behind by the aborted compilation ★
+T-7: instruction left behind by the aborted compilation
 
 
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Step 3: the faulty trace starts compiling from T-4
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step 2: another, shorter trace compiles successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    asm_tail_prep:
-    p = T-5
-    mcp = T-6 ← still contains the stale str x30, [x19, #56]! ★
+This trace emits only two ordinary instructions.
+asm_tail_prep: mcp = T-2
+*--mcp = ... mcp = T-3 ← overwrites the old instruction at T-3
+*--mcp = ... mcp = T-4 ← overwrites the old instruction at T-4
+asm_tail_fixup: T-1 = NOP, T-2 = branch ← writes the tail branch
 
-    The first instruction to emit is: str x30, [x19, #48]
-    emit_lso reads *mcp: the old str x30, [x19, #56] at T-6.
-    Offsets #48 and #56 differ by 8 bytes and satisfy the STR → STP pairing conditions.
+Compilation succeeds; J->mctop = T-4
+(Assume a non-loop trace with spadj = 0.)
 
-    *mcp = stp x30, x30, [x19, #48]
-        ← the merged STP is written at T-6
-        ← pairing returns immediately; mcp does not move to a lower address
+Memory now:
+T-1: NOP ← written by the successful trace
+T-2: branch ← written by the successful trace
+T-3: instruction from the successful trace ← overwrites the old bytes
+T-4: instruction from the successful trace ← overwrites the old bytes
+T-5: instruction from the aborted compilation ← untouched
+T-6: str x30, [x19, #56] ← stale instruction, still untouched! ★
+T-7: instruction from the aborted compilation
 
-    *--mcp = ... mcp = T-7
-        ← the second instruction: add x30, x0, w26, uxtw
 
-    asm_tail_fixup:
-    T-5 = NOP
-    T-6 = branch ← overwrites the STP just produced by merging
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Step 3: the faulty trace starts compiling from T-4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    Memory now:
+asm_tail_prep:
+p = T-5
+mcp = T-6 ← still contains the stale str x30, [x19, #56]! ★
 
-    T-1: NOP ← written by the previous successful trace
-    T-2: branch ← written by the previous successful trace
-    T-3: instruction from the previous successful trace
-    T-4: instruction from the previous successful trace
-    T-5: NOP ← written by the faulty trace
-    T-6: branch ← written by the faulty trace, overwriting the STP
-    T-7: add x30, x0, w26, uxtw ← written by the faulty trace
-         The required str x30, [x19, #48] has disappeared! ★
+The first instruction to emit is: str x30, [x19, #48]
+emit_lso reads *mcp: the old str x30, [x19, #56] at T-6.
+Offsets #48 and #56 differ by 8 bytes and satisfy the STR → STP pairing conditions.
+
+*mcp = stp x30, x30, [x19, #48]
+    ← the merged STP is written at T-6
+    ← pairing returns immediately; mcp does not move to a lower address
+
+*--mcp = ... mcp = T-7
+    ← the second instruction: add x30, x0, w26, uxtw
+
+asm_tail_fixup:
+T-5 = NOP
+T-6 = branch ← overwrites the STP just produced by merging
+
+Memory now:
+
+T-1: NOP ← written by the previous successful trace
+T-2: branch ← written by the previous successful trace
+T-3: instruction from the previous successful trace
+T-4: instruction from the previous successful trace
+T-5: NOP ← written by the faulty trace
+T-6: branch ← written by the faulty trace, overwriting the STP
+T-7: add x30, x0, w26, uxtw ← written by the faulty trace
+     The required str x30, [x19, #48] has disappeared! ★
+```
 
 In the production JIT log, trace 2235 was the one that went wrong. Before it, we observed 32 failed attempts at trace 2234, one successful trace 2234, and 55 failed attempts at trace 2235. These frequent aborts and retries strengthened our suspicion that stale instructions in reused machine-code memory were participating in a merge.
 
@@ -564,67 +588,69 @@ The test data included both integers and floating-point numbers so that LuaJIT w
 
 Without fault injection, the test program terminated normally. Its ARM traces had a loop-tail structure similar to the one in the affected production trace.
 
-    --LUAJIT_REPRO_FORCE_TAILPAIR_TRACE=9 LUAJIT_REPRO_DUMP=/tmp/jit_repro_force.dump ./luajit /root/zengjinji/luajit_ipairs_trace_simple.lua
+```lua
+--LUAJIT_REPRO_FORCE_TAILPAIR_TRACE=9 LUAJIT_REPRO_DUMP=/tmp/jit_repro_force.dump ./luajit /root/zengjinji/luajit_ipairs_trace_simple.lua
 
-    local jit = require("jit")
-    jit.off()
-    local dump_path = os.getenv("LUAJIT_REPRO_DUMP")
-    local dump_flags = "tbirsm"
-    local warmup_iters = 200
+local jit = require("jit")
+jit.off()
+local dump_path = os.getenv("LUAJIT_REPRO_DUMP")
+local dump_flags = "tbirsm"
+local warmup_iters = 200
 
-    local target_iters = 20
+local target_iters = 20
 
-    local function force_number(v)
-      return v + 0.1 - 0.1
-    end
+local function force_number(v)
+  return v + 0.1 - 0.1
+end
 
-    local function is_in_radius_range(coordinates, x, y, radius)
-        for _, idx in ipairs(coordinates) do
-            if (idx.x - x) * (idx.x - x) + (idx.y - y) * (idx.y - y) < radius * radius then
-                return true
-            end
+local function is_in_radius_range(coordinates, x, y, radius)
+    for _, idx in ipairs(coordinates) do
+        if (idx.x - x) * (idx.x - x) + (idx.y - y) * (idx.y - y) < radius * radius then
+            return true
         end
-        return false
     end
+    return false
+end
 
-    local int_coordinates = {
-        { x = 135, y = 119 },
-        { x = 202, y = 202 },
-        { x = 326, y = 148 },
-        { x = 403, y = 198 },
-    }
+local int_coordinates = {
+    { x = 135, y = 119 },
+    { x = 202, y = 202 },
+    { x = 326, y = 148 },
+    { x = 403, y = 198 },
+}
 
-    local mixed_coordinates = {
-        { x = 135, y = 119 },
-        { x = 202, y = 202 },
-        { x = force_number(326), y = force_number(148) },
-        { x = 403, y = 198 },
-    }
+local mixed_coordinates = {
+    { x = 135, y = 119 },
+    { x = 202, y = 202 },
+    { x = force_number(326), y = force_number(148) },
+    { x = 403, y = 198 },
+}
 
-    local int_x = 231
-    local int_y = 106
-    local num_x = force_number(231)
-    local num_y = force_number(106)
-    local radius_num = force_number(60 * 1.5)
-    jit.on()
-    jit.opt.start("hotloop=1", "hotexit=1")
-    jit.flush()
+local int_x = 231
+local int_y = 106
+local num_x = force_number(231)
+local num_y = force_number(106)
+local radius_num = force_number(60 * 1.5)
+jit.on()
+jit.opt.start("hotloop=1", "hotexit=1")
+jit.flush()
 
-    require("jit.dump").on(dump_flags, dump_path)
+require("jit.dump").on(dump_flags, dump_path)
 
 
-    for _ = 1, warmup_iters do
-        is_in_radius_range(int_coordinates, int_x, int_y, radius_num)
-    end
-    for _ = 1, warmup_iters do
-        is_in_radius_range(int_coordinates, num_x, num_y, radius_num)
-    end
-    for _ = 1, warmup_iters do
-        is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
-    end
-    for _ = 1, target_iters do
-        is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
-    end
+for _ = 1, warmup_iters do
+    is_in_radius_range(int_coordinates, int_x, int_y, radius_num)
+end
+for _ = 1, warmup_iters do
+    is_in_radius_range(int_coordinates, num_x, num_y, radius_num)
+end
+for _ = 1, warmup_iters do
+    is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
+end
+for _ = 1, target_iters do
+    is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
+end
+```
 
 We exported the generated JIT output and compared it with the production log. The IR and assembly produced for this test were largely consistent with the faulty production trace 2235:
 
@@ -638,25 +664,27 @@ When compiling a designated trace—trace 9—we deliberately wrote `STR x30, [x
 
 We then checked whether `emit_lso()` would incorrectly merge that injected instruction with the newly requested `STR x30, [x19, #48]`.
 
-    --- a/src/lj_asm_arm64.h
-    +++ b/src/lj_asm_arm64.h
-    @@ -1987,8 +1987,28 @@ static void asm_tail_prep(ASMState *as)
-       if (as->loopref) {
-         as->invmcp = as->mcp = p;
-       } else {
-    +    const char *force_tailpair_trace = getenv("LUAJIT_REPRO_FORCE_TAILPAIR_TRACE");
-    +    int force = 0;
-         as->mcp = p-1;  /* Leave room for stack pointer adjustment. */
-         as->invmcp = NULL;
-    +    if (force_tailpair_trace)
-    +      force = as->T->traceno == (TraceNo)atoi(force_tailpair_trace);
-    +    if (force) {
-    +      /* Proof knob: leave a fake stale STRx [BASE,#56] where emit_lso() peeks.
-    +      ** A following STRx [BASE,#48] can be paired here without decrementing mcp;
-    +      ** asm_tail_fixup() later overwrites this reserved slot with the tail branch.
-    +      */
-    +      p[-1] = A64I_STRx | A64F_D(RID_TMP) | A64F_N(RID_BASE) | A64F_U12(56 >> 3);
-    +    }
+```diff
+--- a/src/lj_asm_arm64.h
++++ b/src/lj_asm_arm64.h
+@@ -1987,8 +1987,28 @@ static void asm_tail_prep(ASMState *as)
+   if (as->loopref) {
+     as->invmcp = as->mcp = p;
+   } else {
++    const char *force_tailpair_trace = getenv("LUAJIT_REPRO_FORCE_TAILPAIR_TRACE");
++    int force = 0;
+     as->mcp = p-1;  /* Leave room for stack pointer adjustment. */
+     as->invmcp = NULL;
++    if (force_tailpair_trace)
++      force = as->T->traceno == (TraceNo)atoi(force_tailpair_trace);
++    if (force) {
++      /* Proof knob: leave a fake stale STRx [BASE,#56] where emit_lso() peeks.
++      ** A following STRx [BASE,#48] can be paired here without decrementing mcp;
++      ** asm_tail_fixup() later overwrites this reserved slot with the tail branch.
++      */
++      p[-1] = A64I_STRx | A64F_D(RID_TMP) | A64F_N(RID_BASE) | A64F_U12(56 >> 3);
++    }
+```
 
 After rebuilding LuaJIT and running the test, the process stayed at 100% CPU and the program failed to terminate.
 
@@ -672,17 +700,19 @@ The experiment demonstrated that placing a suitable stale `STR` in the reserved 
 
 Once we understood the issue, we revisited the older `asm_tail_prep()`:
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
-      }
-      *p = 0;
-    }
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
+  }
+  *p = 0;
+}
+```
 
 In the non-loop branch, `as->mcp` points to `p[-1]`, but only `*p` is cleared.
 
@@ -694,43 +724,49 @@ We chose a very small fix:
 
 The modified code is:
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
 
-        /* Prevent load/store merging on reserved tail slot. */
-        p[-1] = 0;  /* Added */
-      }
-      *p = 0;
-    }
+    /* Prevent load/store merging on reserved tail slot. */
+    p[-1] = 0;  /* Added */
+  }
+  *p = 0;
+}
+```
 
 Before the change:
 
-    asm_tail_prep:
-        p = T-1
-        mcp = T-2
+```text
+asm_tail_prep:
+    p = T-1
+    mcp = T-2
 
-    Memory:
-    T-1: 0
-    T-2: str x30, [x19, #56] ← may be a stale instruction
-    T-3: ...
+Memory:
+T-1: 0
+T-2: str x30, [x19, #56] ← may be a stale instruction
+T-3: ...
+```
 
 After the change:
 
-    asm_tail_prep:
-        p = T-1
-        mcp = T-2
-        p[-1] = 0
+```text
+asm_tail_prep:
+    p = T-1
+    mcp = T-2
+    p[-1] = 0
 
-    Memory:
-    T-1: 0
-    T-2: 0 ← reserved slot has been cleared
-    T-3: ...
+Memory:
+T-1: 0
+T-2: 0 ← reserved slot has been cleared
+T-3: ...
+```
 
 Even if another trace previously used this memory, the compiler will no longer begin the new trace with an old `STR` in the reserved slot.
 
@@ -765,40 +801,44 @@ However, the change also refactored `asm_tail_prep()` and `asm_tail_fixup()`.
 
 **The older implementation:**
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
-      }
-      *p = 0;
-    }
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
+  }
+  *p = 0;
+}
+```
 
 The problem in the older implementation is that the non-loop branch sets `as->mcp` to `p[-1]`, but the final zeroing operation clears `*p` instead.
 
 **The relevant part of the newer implementation:**
 
-    static void asm_tail_prep(ASMState *as, TraceNo lnk)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        if (!lnk) {
-          MCode *target = (MCode *)(void *)lj_vm_exit_interp;
-          if (!A64F_S_OK(target - p, 26) ||
-              !A64F_S_OK(target - (p+1), 26)) p--;
-        }
-        p--;  /* Leave room for stack pointer adjustment. */
-        as->mcp = p;
-        as->invmcp = NULL;
-      }
-      as->mctail = p;
-      *p = 0;  /* Prevent load/store merging. */
+```c
+static void asm_tail_prep(ASMState *as, TraceNo lnk)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    if (!lnk) {
+      MCode *target = (MCode *)(void *)lj_vm_exit_interp;
+      if (!A64F_S_OK(target - p, 26) ||
+          !A64F_S_OK(target - (p+1), 26)) p--;
     }
+    p--;  /* Leave room for stack pointer adjustment. */
+    as->mcp = p;
+    as->invmcp = NULL;
+  }
+  as->mctail = p;
+  *p = 0;  /* Prevent load/store merging. */
+}
+```
 
 Two changes stand out:
 
@@ -807,9 +847,11 @@ Two changes stand out:
 
 The most important part is:
 
-    as->mcp = p;
-    ...
-    *p = 0;  /* Prevent load/store merging. */
+```c
+as->mcp = p;
+...
+*p = 0;  /* Prevent load/store merging. */
+```
 
 **The newer implementation determines the location first, then clears that location, preventing stale instructions from taking part in an incorrect merge.**
 

@@ -53,6 +53,14 @@ cd /root/github/zengjinji.github.io
 
 图片可放到文章的 `index.en.md` 与 `index.zh.md` 旁，用 `![图片说明](example.png)` 引用。
 
+## 代码块排版
+
+代码示例使用带语言标记的围栏代码块，例如 `lua`、`c`、`asm`、`diff`；JIT 日志、GDB 输出和文字过程图使用 `text`，保留缩进与对齐。
+
+代码块使用浅色背景与语言标签。复制按钮只复制代码正文，保留空格和换行；界面文字随中英文切换。浏览器不允许访问剪贴板时，会选中代码并提示手动复制。禁用 JavaScript 时仍可直接阅读和选择代码。
+
+高亮配色由 `hugo.toml` 与 `static/css/main.css` 管理，代码块模板为 `layouts/_markup/render-codeblock.html`，复制逻辑为 `static/js/code-copy.js`。CSS 和复制脚本使用内容指纹，更新后无需等待旧资源缓存过期。
+
 ## 首次启用 GitHub Pages
 
 1. 把本目录的源码提交并推送到仓库 `main` 分支（见下方）。

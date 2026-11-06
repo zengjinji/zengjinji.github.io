@@ -134,38 +134,42 @@ luajit编译代码的过程为加载lua文件-> 转化为字节码-> 记录运�
 
 如下：jit\_dump导出的部分日志
 
-    ---- TRACE 43 start 5/1 lrucache.lua:90
-    0031  TSETS    7   2   1  ; "next"       (lrucache.lua:90)
-    0000  . . FUNCC               ; ffi.meta.__newindex
-    0032  TSETS    2   7   0  ; "prev"       (lrucache.lua:91)
-    0000  . . FUNCC               ; ffi.meta.__newindex
-    0033  MOV      2   7       (lrucache.lua:92)
-    0034  JFORL    3   5       (lrucache.lua:87)
-    ---- TRACE 43 IR
-    0001 x27      int SLOAD  #5    PI
-    0002 x28      int SLOAD  #6    PRI
-    0003 x25      p64 PVAL   #10
-    0004 [8]      cdt CNEWI  +161  0003
-    ....              SNAP   #0   [ ---- ---- ---- ---- ---- 0001 0002 +1   ---- 0004 ---- ]
-    ...........
-    ---- TRACE 43 mcode 188
-    ffff8d5bfa60  mov   x25, x28
-    ffff8d5bfa74  mov   w1, #16
-    ...
-    ffff8d5bfb10  add   x30, x0, x1, lsl #47
-    ffff8d5bfb14  str   x30, [x19, #16]
-    ffff8d5bfb18  b     0x8d5cfc0c
-    ---- TRACE 43 stop -> 5
+```text
+---- TRACE 43 start 5/1 lrucache.lua:90
+0031  TSETS    7   2   1  ; "next"       (lrucache.lua:90)
+0000  . . FUNCC               ; ffi.meta.__newindex
+0032  TSETS    2   7   0  ; "prev"       (lrucache.lua:91)
+0000  . . FUNCC               ; ffi.meta.__newindex
+0033  MOV      2   7       (lrucache.lua:92)
+0034  JFORL    3   5       (lrucache.lua:87)
+---- TRACE 43 IR
+0001 x27      int SLOAD  #5    PI
+0002 x28      int SLOAD  #6    PRI
+0003 x25      p64 PVAL   #10
+0004 [8]      cdt CNEWI  +161  0003
+....              SNAP   #0   [ ---- ---- ---- ---- ---- 0001 0002 +1   ---- 0004 ---- ]
+...........
+---- TRACE 43 mcode 188
+ffff8d5bfa60  mov   x25, x28
+ffff8d5bfa74  mov   w1, #16
+...
+ffff8d5bfb10  add   x30, x0, x1, lsl #47
+ffff8d5bfb14  str   x30, [x19, #16]
+ffff8d5bfb18  b     0x8d5cfc0c
+---- TRACE 43 stop -> 5
+```
 
 ### 3.2 借助 Python 的 Unicorn 模拟器重放ARM64死循环
 
 在线上worker发生异常后，向异常的worker发送kill -6主动生成core文件。通过gdb 调试core文件，通过bt命令查看堆栈。如下：
 
-    (gdb) bt
-    #0  0x0000ffff8d4072e8 in ?? ()
-    #1  0x0000ffe5181ddb80 in ?? ()
-    #2  0x0000000001447740 in ?? ()
-    #3  0x0000000000000000 in ?? (
+```text
+(gdb) bt
+#0  0x0000ffff8d4072e8 in ?? ()
+#1  0x0000ffe5181ddb80 in ?? ()
+#2  0x0000000001447740 in ?? ()
+#3  0x0000000000000000 in ?? (
+```
 
 看到的都是??的代码符号，这是因为。GDB 能读取 Core 中的寄存器和内存，但 LuaJIT 在运行时生成的机器码，并不像普通 C 函数一样具有完整的调试符号。因此，直接使用bt查看时，往往只能看到机器码地址，无法知道它对应哪一行 Lua 代码。
 
@@ -173,7 +177,7 @@ luajit编译代码的过程为加载lua文件-> 转化为字节码-> 记录运�
 
 正常的堆栈如下
 
-```(gdb) bt
+```text
 #0  epoll_wait (epfd=5, events=0x145acc0, maxevents=512, timeout=timeout@entry=63979) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
 #1  0x000000000044b808 in ngx_epoll_process_events (cycle=0x14d1f60, timer=63979, flags=1) at src/event/modules/ngx_epoll_module.c:800
 #2  0x0000000000442d56 in ngx_process_events_and_timers (cycle=cycle@entry=0x14d1f60) at src/event/ngx_event.c:257
@@ -191,7 +195,7 @@ luajit编译代码的过程为加载lua文件-> 转化为字节码-> 记录运�
 
 在我们开启的jit日志/tmp/luajit-traces.log中，找到这个ffff8d4072e8地址，发现它就是jit编译的代码中trace 2235的起始地址，部分jit日志如下:
 
-```(gdb) bt
+```text
 ---- TRACE 60 start captcha_map.lua:278
 ---- TRACE 60 IR
 ffff8d5c8118 mov x7, #0x3a98
@@ -275,9 +279,11 @@ b    <跳回 trace 60>      ; 但 slot 8 的 str 没有了
 
 对应 IR 里的 snapshot （节选）：
 
-    0023 x26 int ADD 0001 +1 ...
-    SNAP #3   [ ---- ---- ---- ---- ---- ---- ---- ---- 0023 0023 0028 ]
-                                                        slot8 slot9 slot10
+```text
+0023 x26 int ADD 0001 +1 ...
+SNAP #3   [ ---- ---- ---- ---- ---- ---- ---- ---- 0023 0023 0028 ]
+                                                    slot8 slot9 slot10
+```
 
 第一行的意思很简单：**循环下标加 1**。`SNAP` 记录的是当 Trace 退出等情况下，需要恢复的 Lua 状态。它不是逐条机器码的清单，但可以帮助我们检查计算后的值是否正确传递。
 
@@ -292,37 +298,41 @@ slot 8 就是 `ipairs` 的循环控制变量，ref `0023` 是自增后的新索�
 
 **正常情况下：**
 
-    TRACE 60
-        从 slot 8 读取 idx，假设当前为 1
-            ↓
-    TRACE 64
-        继续执行循环中的代码，推进循环下标
-            ↓
-    TRACE 2235
-        假设计算得到新的 idx = 4
-        执行 STR，将新下标 4 写回 slot 8
-            ↓
-    跳回 TRACE 60
-        从 slot 8 读取 idx = 4
-        使用更新后的下标继续执行或结束遍历
+```text
+TRACE 60
+    从 slot 8 读取 idx，假设当前为 1
+        ↓
+TRACE 64
+    继续执行循环中的代码，推进循环下标
+        ↓
+TRACE 2235
+    假设计算得到新的 idx = 4
+    执行 STR，将新下标 4 写回 slot 8
+        ↓
+跳回 TRACE 60
+    从 slot 8 读取 idx = 4
+    使用更新后的下标继续执行或结束遍历
+```
 
 **异常情况下（TRACE 2235 少了一条 STR）：**
 
-    TRACE 60
-        从 slot 8 读取 idx = 1
-            ↓
-    TRACE 64
-        继续执行循环中的代码，推进循环下标
-            ↓
-    TRACE 2235
-        计算得到新的 idx = 4
-        但缺少 STR，没有写回 slot 8
-            ↓
-    跳回 TRACE 60
-        从 slot 8 读取 idx，发现仍然是 1
-            ↓
-    TRACE 64 → TRACE 2235 → TRACE 60
-        反复执行，形成死循环
+```text
+TRACE 60
+    从 slot 8 读取 idx = 1
+        ↓
+TRACE 64
+    继续执行循环中的代码，推进循环下标
+        ↓
+TRACE 2235
+    计算得到新的 idx = 4
+    但缺少 STR，没有写回 slot 8
+        ↓
+跳回 TRACE 60
+    从 slot 8 读取 idx，发现仍然是 1
+        ↓
+TRACE 64 → TRACE 2235 → TRACE 60
+    反复执行，形成死循环
+```
 
 **问题的关键是：循环下标在寄存器中已经计算出了新值，但没有正确写回 Lua 栈。**
 
@@ -358,29 +368,33 @@ slot 8 就是 `ipairs` 的循环控制变量，ref `0023` 是自增后的新索�
 
 我们观察 `jit.dump` 输出的三条连续 Trace：
 
-    ---- TRACE 2233 mcode 128
-    ffff8d40747c ldr x30, [x22, #368]
-    ......
-    ffff8d4074f8 b   0x8c6bcd28
-    ---- TRACE 2233 stop -> interpreter
+```text
+---- TRACE 2233 mcode 128
+ffff8d40747c ldr x30, [x22, #368]
+......
+ffff8d4074f8 b   0x8c6bcd28
+---- TRACE 2233 stop -> interpreter
 
-    ---- TRACE 2234 mcode 24
-    ffff8d40744c mov x0, #0
-    ......
-    ffff8d407460 b   0x8c6bcd28
-    ---- TRACE 2234 stop -> interpreter
+---- TRACE 2234 mcode 24
+ffff8d40744c mov x0, #0
+......
+ffff8d407460 b   0x8c6bcd28
+---- TRACE 2234 stop -> interpreter
 
-    ---- TRACE 2235 mcode 320
-    ffff8d4072e8 mov x27, x26
-    ......
-    ffff8d407424 b   0x8d5c8118
-    ---- TRACE 2235 stop -> 60
+---- TRACE 2235 mcode 320
+ffff8d4072e8 mov x27, x26
+......
+ffff8d407424 b   0x8d5c8118
+---- TRACE 2235 stop -> 60
+```
 
 <!---->
 
-    TRACE 2233：ffff8d40747c ... ffff8d4074f8
-    TRACE 2234：ffff8d40744c ... ffff8d407460
-    TRACE 2235：ffff8d4072e8 ... ffff8d407424
+```text
+TRACE 2233：ffff8d40747c ... ffff8d4074f8
+TRACE 2234：ffff8d40744c ... ffff8d407460
+TRACE 2235：ffff8d4072e8 ... ffff8d407424
+```
 
 这三条 Trace 的代码地址越来越低。LuaJIT 的 ARM64 汇编器会从高地址向低地址发射机器码。由此我们想到：不同 Trace 的编译过程，有没有可能反复使用之前占用过的内存？
 可以看到，在这一段机器码内存区域中，后生成的 Trace 使用了更低的地址。
@@ -393,11 +407,13 @@ slot 8 就是 `ipairs` 的循环控制变量，ref `0023` 是自增后的新索�
 
 在线上日志中，我们看到很多类似记录：
 
-    ---- TRACE 2235 abort sbw_preload_up_rewrite_pre.lua:47
-    ---- TRACE 2235 start config.lua:569
-    ---- TRACE 2235 abort config.lua:590
-    ---- TRACE 2235 start ssl_cert_by.lua:108
-    ---- TRACE 2235 abort ssl_cert_by.lua:140
+```text
+---- TRACE 2235 abort sbw_preload_up_rewrite_pre.lua:47
+---- TRACE 2235 start config.lua:569
+---- TRACE 2235 abort config.lua:590
+---- TRACE 2235 start ssl_cert_by.lua:108
+---- TRACE 2235 abort ssl_cert_by.lua:140
+```
 
 `abort` 表示这一次 Trace 编译没有成功。失败后，相关机器码空间可能被后续编译复用，但之前写入的字节不会清空。
 
@@ -409,7 +425,7 @@ slot 8 就是 `ipairs` 的循环控制变量，ref `0023` 是自增后的新索�
 
 因此，如果某次 Trace 已经进入机器码生成阶段，写入了部分指令，随后因为异常中止，那么这些字节可能仍然保留在原来的内存位置，等待后续编译复用。
 
-```
+```c
 static int trace_abort(jit_State *J)
 {
   ....
@@ -438,12 +454,16 @@ static void mcode_protect(jit_State *J, int prot)
 
 阅读 `lj_emit_arm64.h` 时，我们关注到 `emit_lso()` 中把相邻 `LDR/STR` 合并为 `LDP/STP` 的优化。例如：
 
-    str x4,  [x19, #48]
-    str x30, [x19, #56]
+```asm
+str x4,  [x19, #48]
+str x30, [x19, #56]
+```
 
 在满足配对条件时，可以合并成一条 `STP`：
 
-    stp x4, x30, [x19, #48]
+```asm
+stp x4, x30, [x19, #48]
+```
 
 这本来是正常的优化。问题在于：**如果汇编器读取的“可配对指令”不是这次编译刚生成的，而是内存里的旧内容，会怎么样？**
 
@@ -451,10 +471,12 @@ static void mcode_protect(jit_State *J, int prot)
 
 在旧版 `lj_asm_arm64.h` 的 `asm_tail_prep()` 中，非 loop 分支会预留两个槽位，其中一个留给后续跳转，另一个留给栈指针调整：
 
-    MCode *p = as->mctop - 1;
-    as->mcp = p - 1;
-    as->invmcp = NULL;
-    *p = 0;
+```c
+MCode *p = as->mctop - 1;
+as->mcp = p - 1;
+as->invmcp = NULL;
+*p = 0;
+```
 
 注意：这里只清零了 `*p`，并没有清零 `p[-1]`。而 `as->mcp` 恰好指向 `p[-1]`。
 
@@ -470,91 +492,93 @@ static void mcode_protect(jit_State *J, int prot)
 
 <!---->
 
-    初始状态：J->mctop = T
-    （T-1、T-2 表示相邻的指令槽，每个槽占 4 字节）
+```text
+初始状态：J->mctop = T
+（T-1、T-2 表示相邻的指令槽，每个槽占 4 字节）
 
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    第一步：某个 trace 开始装配，然后 abort
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+第一步：某个 trace 开始装配，然后 abort
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    asm_tail_prep:
-    p = T-1
-    mcp = T-2 （预留两个 slot，其中 T-1 清零，T-2 未清零）
+asm_tail_prep:
+p = T-1
+mcp = T-2 （预留两个 slot，其中 T-1 清零，T-2 未清零）
 
-    *--mcp = ... mcp = T-3 ← 第1条汇编
-    *--mcp = ... mcp = T-4 ← 第2条汇编
-    *--mcp = ... mcp = T-5 ← 第3条汇编
-    *--mcp = ... mcp = T-6 ← 第4条汇编 (str x30, [x19, #56]) ← 目标！
-    *--mcp = ... mcp = T-7 ← 第5条汇编
+*--mcp = ... mcp = T-3 ← 第1条汇编
+*--mcp = ... mcp = T-4 ← 第2条汇编
+*--mcp = ... mcp = T-5 ← 第3条汇编
+*--mcp = ... mcp = T-6 ← 第4条汇编 (str x30, [x19, #56]) ← 目标！
+*--mcp = ... mcp = T-7 ← 第5条汇编
 
-    abort! 本次编译未提交，内存空间可以被后续 trace 复用，但不清空
+abort! 本次编译未提交，内存空间可以被后续 trace 复用，但不清空
 
-    内存此刻：
-    T-1: 0 ← asm_tail_prep 清零
-    T-2: [未清零，可能保留旧内容]
-    T-3: abort 后残留的汇编 ← abort 留下的
-    T-4: abort 后残留的汇编 ← abort 留下的
-    T-5: abort 后残留的汇编 ← abort 留下的
-    T-6: str x30, [x19, #56] ← abort 留下的 ★
-    T-7: abort 后残留的汇编
-
-
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    第二步：另一个短 trace 成功编译
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    这个 trace 只发射了 2 条普通指令
-    asm_tail_prep: mcp = T-2
-    *--mcp = ... mcp = T-3 ← 覆盖了 abort 留下的 T-3
-    *--mcp = ... mcp = T-4 ← 覆盖了 abort 留下的 T-4
-    asm_tail_fixup: T-1 = NOP，T-2 = branch ← 写入尾部跳转
-
-    编译成功，J->mctop = T-4
-    （假设是非 loop trace，且 spadj = 0）
-
-    内存此刻：
-    T-1: NOP ← 成功 trace 写的
-    T-2: branch ← 成功 trace 写的
-    T-3: 成功 trace 的指令 ← 覆盖了 abort 留下的
-    T-4: 成功 trace 的指令 ← 覆盖了 abort 留下的
-    T-5: abort 后残留的汇编 ← 未被覆盖
-    T-6: str x30, [x19, #56] ← abort 留下的，未被覆盖！★
-    T-7: abort 后残留的汇编
+内存此刻：
+T-1: 0 ← asm_tail_prep 清零
+T-2: [未清零，可能保留旧内容]
+T-3: abort 后残留的汇编 ← abort 留下的
+T-4: abort 后残留的汇编 ← abort 留下的
+T-5: abort 后残留的汇编 ← abort 留下的
+T-6: str x30, [x19, #56] ← abort 留下的 ★
+T-7: abort 后残留的汇编
 
 
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    第三步：bug trace 开始编译，内存空间从 T-4 开始
-    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+第二步：另一个短 trace 成功编译
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    asm_tail_prep:
-    p = T-5
-    mcp = T-6 ← abort 留下的，内容为 str x30, [x19, #56]，未被覆盖！★
+这个 trace 只发射了 2 条普通指令
+asm_tail_prep: mcp = T-2
+*--mcp = ... mcp = T-3 ← 覆盖了 abort 留下的 T-3
+*--mcp = ... mcp = T-4 ← 覆盖了 abort 留下的 T-4
+asm_tail_fixup: T-1 = NOP，T-2 = branch ← 写入尾部跳转
 
-    准备生成第一条汇编：str x30, [x19, #48]
-    emit_lso 读取 *mcp，即 T-6 的旧指令：str x30, [x19, #56]
-    发现新旧两条 STR 的内存偏移分别是 #48 和 #56，相差 8 字节，符合 STR → STP 合并条件
+编译成功，J->mctop = T-4
+（假设是非 loop trace，且 spadj = 0）
 
-    *mcp = stp x30, x30, [x19, #48]
-        ← 合并后的 STP 写在 T-6
-        ← 合并成功直接 return，mcp 不向低地址移动
+内存此刻：
+T-1: NOP ← 成功 trace 写的
+T-2: branch ← 成功 trace 写的
+T-3: 成功 trace 的指令 ← 覆盖了 abort 留下的
+T-4: 成功 trace 的指令 ← 覆盖了 abort 留下的
+T-5: abort 后残留的汇编 ← 未被覆盖
+T-6: str x30, [x19, #56] ← abort 留下的，未被覆盖！★
+T-7: abort 后残留的汇编
 
-    *--mcp = ... mcp = T-7
-        ← 第二条汇编 add x30, x0, w26, uxtw
 
-    asm_tail_fixup:
-    T-5 = NOP
-    T-6 = branch ← 覆盖刚才合并生成的 STP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+第三步：bug trace 开始编译，内存空间从 T-4 开始
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    内存此刻：
+asm_tail_prep:
+p = T-5
+mcp = T-6 ← abort 留下的，内容为 str x30, [x19, #56]，未被覆盖！★
 
-    T-1: NOP ← 上一个成功 trace 写的
-    T-2: branch ← 上一个成功 trace 写的
-    T-3: 成功 trace 的指令 ← 上一个 trace 写的
-    T-4: 成功 trace 的指令 ← 上一个 trace 写的
-    T-5: NOP ← bug trace 写的
-    T-6: branch ← bug trace 写的，覆盖了原来的 STP
-    T-7: add x30, x0, w26, uxtw ← bug trace 写的
-         原本应该生成的 str x30, [x19, #48] 丢失！★
+准备生成第一条汇编：str x30, [x19, #48]
+emit_lso 读取 *mcp，即 T-6 的旧指令：str x30, [x19, #56]
+发现新旧两条 STR 的内存偏移分别是 #48 和 #56，相差 8 字节，符合 STR → STP 合并条件
+
+*mcp = stp x30, x30, [x19, #48]
+    ← 合并后的 STP 写在 T-6
+    ← 合并成功直接 return，mcp 不向低地址移动
+
+*--mcp = ... mcp = T-7
+    ← 第二条汇编 add x30, x0, w26, uxtw
+
+asm_tail_fixup:
+T-5 = NOP
+T-6 = branch ← 覆盖刚才合并生成的 STP
+
+内存此刻：
+
+T-1: NOP ← 上一个成功 trace 写的
+T-2: branch ← 上一个成功 trace 写的
+T-3: 成功 trace 的指令 ← 上一个 trace 写的
+T-4: 成功 trace 的指令 ← 上一个 trace 写的
+T-5: NOP ← bug trace 写的
+T-6: branch ← bug trace 写的，覆盖了原来的 STP
+T-7: add x30, x0, w26, uxtw ← bug trace 写的
+     原本应该生成的 str x30, [x19, #48] 丢失！★
+```
 
 查看线上出现死循环的jit日志，出问题的是trace 2235。在此之前经历了(32个trace 2234失败，一个2234 trace成功，55个trace2235失败)。这些频繁的编译失败和重试，使我们更加怀疑机器码内存复用过程中存在残留指令，导致合并
 
@@ -564,67 +588,69 @@ static void mcode_protect(jit_State *J, int prot)
 测试数据同时包含整数和浮点数，目的是让 LuaJIT 生成与线上 TRACE 2235 结构相似的 IR 和机器码。
 在不注入故障的情况下，测试程序能够正常结束，在arm平台上生成的相关 Trace 与线上故障 Trace 具有相似的循环尾部结构。
 
-    --LUAJIT_REPRO_FORCE_TAILPAIR_TRACE=9 LUAJIT_REPRO_DUMP=/tmp/jit_repro_force.dump ./luajit /root/zengjinji/luajit_ipairs_trace_simple.lua
+```lua
+--LUAJIT_REPRO_FORCE_TAILPAIR_TRACE=9 LUAJIT_REPRO_DUMP=/tmp/jit_repro_force.dump ./luajit /root/zengjinji/luajit_ipairs_trace_simple.lua
 
-    local jit = require("jit")
-    jit.off()
-    local dump_path = os.getenv("LUAJIT_REPRO_DUMP")
-    local dump_flags = "tbirsm"
-    local warmup_iters = 200
+local jit = require("jit")
+jit.off()
+local dump_path = os.getenv("LUAJIT_REPRO_DUMP")
+local dump_flags = "tbirsm"
+local warmup_iters = 200
 
-    local target_iters = 20
+local target_iters = 20
 
-    local function force_number(v)
-      return v + 0.1 - 0.1
-    end
+local function force_number(v)
+  return v + 0.1 - 0.1
+end
 
-    local function is_in_radius_range(coordinates, x, y, radius)
-        for _, idx in ipairs(coordinates) do
-            if (idx.x - x) * (idx.x - x) + (idx.y - y) * (idx.y - y) < radius * radius then
-                return true
-            end
+local function is_in_radius_range(coordinates, x, y, radius)
+    for _, idx in ipairs(coordinates) do
+        if (idx.x - x) * (idx.x - x) + (idx.y - y) * (idx.y - y) < radius * radius then
+            return true
         end
-        return false
     end
+    return false
+end
 
-    local int_coordinates = {
-        { x = 135, y = 119 },
-        { x = 202, y = 202 },
-        { x = 326, y = 148 },
-        { x = 403, y = 198 },
-    }
+local int_coordinates = {
+    { x = 135, y = 119 },
+    { x = 202, y = 202 },
+    { x = 326, y = 148 },
+    { x = 403, y = 198 },
+}
 
-    local mixed_coordinates = {
-        { x = 135, y = 119 },
-        { x = 202, y = 202 },
-        { x = force_number(326), y = force_number(148) },
-        { x = 403, y = 198 },
-    }
+local mixed_coordinates = {
+    { x = 135, y = 119 },
+    { x = 202, y = 202 },
+    { x = force_number(326), y = force_number(148) },
+    { x = 403, y = 198 },
+}
 
-    local int_x = 231
-    local int_y = 106
-    local num_x = force_number(231)
-    local num_y = force_number(106)
-    local radius_num = force_number(60 * 1.5)
-    jit.on()
-    jit.opt.start("hotloop=1", "hotexit=1")
-    jit.flush()
+local int_x = 231
+local int_y = 106
+local num_x = force_number(231)
+local num_y = force_number(106)
+local radius_num = force_number(60 * 1.5)
+jit.on()
+jit.opt.start("hotloop=1", "hotexit=1")
+jit.flush()
 
-    require("jit.dump").on(dump_flags, dump_path)
+require("jit.dump").on(dump_flags, dump_path)
 
 
-    for _ = 1, warmup_iters do
-        is_in_radius_range(int_coordinates, int_x, int_y, radius_num)
-    end
-    for _ = 1, warmup_iters do
-        is_in_radius_range(int_coordinates, num_x, num_y, radius_num)
-    end
-    for _ = 1, warmup_iters do
-        is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
-    end
-    for _ = 1, target_iters do
-        is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
-    end
+for _ = 1, warmup_iters do
+    is_in_radius_range(int_coordinates, int_x, int_y, radius_num)
+end
+for _ = 1, warmup_iters do
+    is_in_radius_range(int_coordinates, num_x, num_y, radius_num)
+end
+for _ = 1, warmup_iters do
+    is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
+end
+for _ = 1, target_iters do
+    is_in_radius_range(mixed_coordinates, num_x, num_y, radius_num)
+end
+```
 
 导出生成的jit和线上对比，如下图：
 
@@ -640,25 +666,27 @@ static void mcode_protect(jit_State *J, int prot)
 
 随后观察 `emit_lso()` 是否会把这条人为注入的旧指令，与本次准备生成的 `STR x30, [x19, #48]` 错误合并。
 
-    --- a/src/lj_asm_arm64.h
-    +++ b/src/lj_asm_arm64.h
-    @@ -1987,8 +1987,28 @@ static void asm_tail_prep(ASMState *as)
-       if (as->loopref) {
-         as->invmcp = as->mcp = p;
-       } else {
-    +    const char *force_tailpair_trace = getenv("LUAJIT_REPRO_FORCE_TAILPAIR_TRACE");
-    +    int force = 0;
-         as->mcp = p-1;  /* Leave room for stack pointer adjustment. */
-         as->invmcp = NULL;
-    +    if (force_tailpair_trace)
-    +      force = as->T->traceno == (TraceNo)atoi(force_tailpair_trace);
-    +    if (force) {
-    +      /* Proof knob: leave a fake stale STRx [BASE,#56] where emit_lso() peeks.
-    +      ** A following STRx [BASE,#48] can be paired here without decrementing mcp;
-    +      ** asm_tail_fixup() later overwrites this reserved slot with the tail branch.
-    +      */
-    +      p[-1] = A64I_STRx | A64F_D(RID_TMP) | A64F_N(RID_BASE) | A64F_U12(56 >> 3);
-    +    }
+```diff
+--- a/src/lj_asm_arm64.h
++++ b/src/lj_asm_arm64.h
+@@ -1987,8 +1987,28 @@ static void asm_tail_prep(ASMState *as)
+   if (as->loopref) {
+     as->invmcp = as->mcp = p;
+   } else {
++    const char *force_tailpair_trace = getenv("LUAJIT_REPRO_FORCE_TAILPAIR_TRACE");
++    int force = 0;
+     as->mcp = p-1;  /* Leave room for stack pointer adjustment. */
+     as->invmcp = NULL;
++    if (force_tailpair_trace)
++      force = as->T->traceno == (TraceNo)atoi(force_tailpair_trace);
++    if (force) {
++      /* Proof knob: leave a fake stale STRx [BASE,#56] where emit_lso() peeks.
++      ** A following STRx [BASE,#48] can be paired here without decrementing mcp;
++      ** asm_tail_fixup() later overwrites this reserved slot with the tail branch.
++      */
++      p[-1] = A64I_STRx | A64F_D(RID_TMP) | A64F_N(RID_BASE) | A64F_U12(56 >> 3);
++    }
+```
 
 重新编译 LuaJIT 并运行测试脚本后，观察到进程 CPU 持续保持 100%，测试程序无法正常结束。
 
@@ -674,17 +702,19 @@ static void mcode_protect(jit_State *J, int prot)
 
 确定问题后，我们重新检查了旧版 `asm_tail_prep()`：
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
-      }
-      *p = 0;
-    }
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
+  }
+  *p = 0;
+}
+```
 
 在非 loop 分支中，`as->mcp` 指向 `p[-1]`，但是只清零了 `*p`。
 
@@ -696,43 +726,49 @@ static void mcode_protect(jit_State *J, int prot)
 
 修改后的源码：
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
 
-        /* Prevent load/store merging on reserved tail slot. */
-        p[-1] = 0;  /* 新增 */
-      }
-      *p = 0;
-    }
+    /* Prevent load/store merging on reserved tail slot. */
+    p[-1] = 0;  /* 新增 */
+  }
+  *p = 0;
+}
+```
 
 修改之前：
 
-    asm_tail_prep:
-        p = T-1
-        mcp = T-2
+```text
+asm_tail_prep:
+    p = T-1
+    mcp = T-2
 
-    内存：
-    T-1: 0
-    T-2: str x30, [x19, #56] ← 可能残留旧指令
-    T-3: ...
+内存：
+T-1: 0
+T-2: str x30, [x19, #56] ← 可能残留旧指令
+T-3: ...
+```
 
 修改之后：
 
-    asm_tail_prep:
-        p = T-1
-        mcp = T-2
-        p[-1] = 0
+```text
+asm_tail_prep:
+    p = T-1
+    mcp = T-2
+    p[-1] = 0
 
-    内存：
-    T-1: 0
-    T-2: 0 ← 预留槽清零
-    T-3: ...
+内存：
+T-1: 0
+T-2: 0 ← 预留槽清零
+T-3: ...
+```
 
 这样即使这块机器码内存之前被其他 Trace 使用过，也不会在开始编译时将预留槽中的旧 `STR` 当成当前指令。
 
@@ -767,40 +803,44 @@ static void mcode_protect(jit_State *J, int prot)
 
 **旧版代码：**
 
-    static void asm_tail_prep(ASMState *as)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        as->mcp = p-1;
-        as->invmcp = NULL;
-      }
-      *p = 0;
-    }
+```c
+static void asm_tail_prep(ASMState *as)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    as->mcp = p-1;
+    as->invmcp = NULL;
+  }
+  *p = 0;
+}
+```
 
 旧版的问题在于，非 loop 分支中 `as->mcp` 指向 `p[-1]`，但最后清零的却是 `*p`。
 
 **新版相关代码（节选）：**
 
-    static void asm_tail_prep(ASMState *as, TraceNo lnk)
-    {
-      MCode *p = as->mctop - 1;
-      if (as->loopref) {
-        as->invmcp = as->mcp = p;
-      } else {
-        if (!lnk) {
-          MCode *target = (MCode *)(void *)lj_vm_exit_interp;
-          if (!A64F_S_OK(target - p, 26) ||
-              !A64F_S_OK(target - (p+1), 26)) p--;
-        }
-        p--;  /* Leave room for stack pointer adjustment. */
-        as->mcp = p;
-        as->invmcp = NULL;
-      }
-      as->mctail = p;
-      *p = 0;  /* Prevent load/store merging. */
+```c
+static void asm_tail_prep(ASMState *as, TraceNo lnk)
+{
+  MCode *p = as->mctop - 1;
+  if (as->loopref) {
+    as->invmcp = as->mcp = p;
+  } else {
+    if (!lnk) {
+      MCode *target = (MCode *)(void *)lj_vm_exit_interp;
+      if (!A64F_S_OK(target - p, 26) ||
+          !A64F_S_OK(target - (p+1), 26)) p--;
     }
+    p--;  /* Leave room for stack pointer adjustment. */
+    as->mcp = p;
+    as->invmcp = NULL;
+  }
+  as->mctail = p;
+  *p = 0;  /* Prevent load/store merging. */
+}
+```
 
 可以看到，新版主要有两个变化：
 
@@ -809,9 +849,11 @@ static void mcode_protect(jit_State *J, int prot)
 
 其中，最关键的就是：
 
-    as->mcp = p;
-    ...
-    *p = 0;  /* Prevent load/store merging. */
+```c
+as->mcp = p;
+...
+*p = 0;  /* Prevent load/store merging. */
+```
 
 **新版先确定位置，再清零该位置，避免旧指令参与错误合并。**
 

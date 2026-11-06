@@ -154,3 +154,24 @@ other = "{{ .Count }} min read"
 [post_count]
 one = "{{ .Count }} post"
 other = "{{ .Count }} posts"
+
+[copy]
+other = "Copy"
+
+[copied]
+other = "Copied!"
+
+[copy_failed]
+other = "Copy manually"
+
+[copy_code]
+other = "Copy code"
+
+[code_asm]
+other = "Assembly"
+
+[code_diff]
+other = "Diff"
+
+[code_text]
+other = "Text"

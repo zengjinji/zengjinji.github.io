@@ -14,7 +14,8 @@
   <meta property="og:url" content="{{ .Permalink }}">
   <meta property="og:type" content="{{ if eq .Section "posts" }}article{{ else }}website{{ end }}">
   <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ "css/main.css" | relURL }}">
+  {{ $css := resources.FromString "css/main.css" (readFile "static/css/main.css") | minify | fingerprint }}
+  <link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}" crossorigin="anonymous">
   {{ range .AlternativeOutputFormats }}<link rel="alternate" type="{{ .MediaType.Type }}" title="{{ site.Title }}" href="{{ .Permalink }}">{{ end }}
 </head>
 <body>
@@ -31,5 +32,9 @@
   </header>
   <main id="main" class="wrapper">{{ block "main" . }}{{ end }}</main>
   <footer class="site-footer wrapper"><span>© {{ now.Year }} zengjinji<span class="footer-sep"> · </span>{{ i18n "footer_motto" }}</span><span>{{ i18n "built_with" }} <a href="https://gohugo.io/">Hugo</a> · {{ i18n "hosted_on" }} <a href="https://pages.github.com/">GitHub Pages</a></span></footer>
+{{ if .Store.Get "hasCodeBlocks" }}
+    {{ $copyScript := resources.FromString "js/code-copy.js" (readFile "static/js/code-copy.js") | fingerprint }}
+    <script src="{{ $copyScript.RelPermalink }}" integrity="{{ $copyScript.Data.Integrity }}" crossorigin="anonymous" defer></script>
+  {{ end }}
 </body>
 </html>

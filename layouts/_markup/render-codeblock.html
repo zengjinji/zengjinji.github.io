@@ -1,0 +1,17 @@
+{{- $language := .Type | lower | default "text" -}}
+{{- if not (transform.CanHighlight $language) -}}{{- $language = "text" -}}{{- end -}}
+{{- $labels := dict "lua" "Lua" "c" "C" "bash" "Shell" "asm" (i18n "code_asm") "diff" (i18n "code_diff") "text" (i18n "code_text") -}}
+{{- $label := index $labels $language | default (upper $language) -}}
+{{- $id := printf "code-%d" .Ordinal -}}
+{{- $highlight := transform.HighlightCodeBlock . (dict "type" $language "lineNos" false) -}}
+{{- .Page.Store.Set "hasCodeBlocks" true -}}
+<div class="code-block" data-language="{{ $language }}">
+  <div class="code-block-toolbar">
+    <span class="code-language" id="{{ $id }}-label">{{ $label }}</span>
+    <button class="code-copy" type="button" data-copy-code="{{ $id }}" data-label-copy="{{ i18n "copy" }}" data-label-copied="{{ i18n "copied" }}" data-label-failed="{{ i18n "copy_failed" }}" aria-label="{{ i18n "copy_code" }}: {{ $label }}" aria-controls="{{ $id }}" title="{{ i18n "copy_code" }}" hidden>
+      <svg class="code-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+      <span class="code-copy-text" role="status" aria-live="polite">{{ i18n "copy" }}</span>
+    </button>
+  </div>
+  <pre class="chroma" tabindex="0" aria-labelledby="{{ $id }}-label"><code id="{{ $id }}" class="language-{{ $language }}">{{ $highlight.Inner }}</code></pre>
+</div>
