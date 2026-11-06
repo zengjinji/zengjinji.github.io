@@ -44,8 +44,8 @@ cd /root/github/hugo
 
 1. 把本目录的源码提交并推送到仓库 `main` 分支（见下方）。
 2. 打开 <https://github.com/zengjinji/zengjinji.github.io/settings/pages>。
-3. 在 **Build and deployment → Source** 中选择 **GitHub Actions**。
-4. 打开 <https://github.com/zengjinji/zengjinji.github.io/actions>，等待 `Build and deploy Hugo to GitHub Pages` 成功。若第一次因未启用 Pages 而失败，启用后在 Actions 中重新运行。
+3. 在 **Build and deployment → Source** 中选择 **GitHub Actions**。如果原来选择了 **Deploy from a branch**，必须切换，避免默认 Jekyll 部署覆盖 Hugo 页面。
+4. 打开 <https://github.com/zengjinji/zengjinji.github.io/actions>，等待 `Build and deploy Hugo to GitHub Pages` 成功。首次切换发布来源后，在 Actions 中重新运行该流程，或推送一次新的源码提交以触发部署。
 5. 访问 <https://zengjinji.github.io/>。
 
 部署方式参考 [Hugo 官方指南](https://gohugo.io/host-and-deploy/deploy-to-github-pages/) 与 [GitHub Pages 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。无需购买域名，无需上传 `public/` 到源码分支。
