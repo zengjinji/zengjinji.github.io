@@ -20,5 +20,6 @@ English is the default language. Use the language button next to About to switch
 
 ## Stay in touch
 
+- Email: [zx827882285@gmail.com](mailto:zx827882285@gmail.com)
 - [GitHub: zengjinji](https://github.com/zengjinji)
 - [Subscribe via RSS](/index.xml)

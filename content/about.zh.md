@@ -20,5 +20,6 @@ description = '一个用来记录、整理与分享的小空间。'
 
 ## 保持联系
 
+- 邮箱：[zx827882285@gmail.com](mailto:zx827882285@gmail.com)
 - [GitHub：zengjinji](https://github.com/zengjinji)
 - [RSS 订阅](/zh/index.xml)
