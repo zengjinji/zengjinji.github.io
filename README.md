@@ -57,7 +57,7 @@ cd /root/github/zengjinji.github.io
 
 代码示例使用带语言标记的围栏代码块，例如 `lua`、`c`、`asm`、`diff`；JIT 日志、GDB 输出和文字过程图使用 `text`，保留缩进与对齐。
 
-正文保持亮色，代码块及工具栏使用深色背景，并显示语言标签。复制按钮只复制代码正文，保留空格和换行；界面文字随中英文切换。浏览器不允许访问剪贴板时，会选中代码并提示手动复制。禁用 JavaScript 时仍可直接阅读和选择代码。
+正文保持亮色，代码块采用 Dracula 高亮配色，工具栏使用协调的深色背景，并显示语言标签。复制按钮只复制代码正文，保留空格和换行；界面文字随中英文切换。浏览器不允许访问剪贴板时，会选中代码并提示手动复制。禁用 JavaScript 时仍可直接阅读和选择代码。
 
 高亮配色由 `hugo.toml` 与 `static/css/main.css` 管理，代码块模板为 `layouts/_markup/render-codeblock.html`，复制逻辑为 `static/js/code-copy.js`。CSS 和复制脚本使用内容指纹，更新后无需等待旧资源缓存过期。
 
