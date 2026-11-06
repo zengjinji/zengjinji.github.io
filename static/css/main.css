@@ -83,3 +83,14 @@
 /* GenericTraceback */ .chroma .gt { color:#ff7b72 }
 /* GenericUnderline */ .chroma .gl { text-decoration:underline }
 /* TextWhitespace */ .chroma .w { color:#6e7681 }
+
+/* Language switch and English typography. */
+.site-header nav .language-switch{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:5px 11px;border:1px solid #cddbcf;border-radius:5px;background:var(--paper);font-size:11px;line-height:1.4;white-space:nowrap;color:var(--green)}
+.site-header nav .language-switch:hover{background:var(--green-light);border-color:#93ad9b}
+html[lang="en-US"] .hero h1{font-size:clamp(31px,4.3vw,48px);line-height:1.4;letter-spacing:-1.5px;max-width:760px}
+html[lang="en-US"] .hero>p{max-width:650px}
+html[lang="en-US"] .article-header h1{font-size:32px;line-height:1.45}
+html[lang="en-US"] .article-toc{font-size:10px;line-height:1.65}
+@media(max-width:720px){html[lang="en-US"] .article-header h1{font-size:27px}html[lang="en-US"] .hero h1{font-size:36px}}
+@media(max-width:600px){.site-header{height:auto;min-height:106px;flex-wrap:wrap;padding-top:17px;padding-bottom:13px;gap:11px}.site-header nav{width:100%;gap:22px;justify-content:flex-start}.site-header nav .language-switch{margin-left:auto}.brand-sub{display:inline}}
+@media(max-width:430px){html[lang="en-US"] .hero h1{font-size:31px}html[lang="en-US"] .article-header h1{font-size:25px}.site-header nav{gap:20px}}

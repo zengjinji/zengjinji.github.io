@@ -2,8 +2,9 @@
 title = "OpenResty Worker 莫名死循环：我们是怎么查出 LuaJIT ARM64 少生成了一条指令的？"
 date = '2026-11-06T15:10:53+08:00'
 slug = 'luajit-arm64-infinite-loop'
+translationKey = 'luajit-arm64-infinite-loop'
 description = "从 CPU 100%、循环无法结束，到定位 LuaJIT ARM64 机器码中缺失的 STR 指令：一次线上问题的排查、复现与修复记录。"
-tags = ['OpenResty', 'LuaJIT', 'ARM64', '问题排查']
+tags = ['OpenResty', 'LuaJIT', 'ARM64', 'Troubleshooting']
 draft = false
 +++
 

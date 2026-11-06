@@ -2,21 +2,21 @@
 title = '{{ replace .File.ContentBaseName "-" " " | title }}'
 date = '{{ .Date }}'
 slug = '{{ .File.ContentBaseName }}'
-description = '在这里写一句文章简介。'
-tags = ['笔记']
+description = 'A short introduction to this article.'
+tags = ['Notes']
 draft = true
 +++
 
-在这里开始写作。
+Start writing here.
 
-## 起因
+## Background
 
-记录背景和想解决的问题。
+Describe the context and the problem.
 
-## 过程
+## Investigation
 
-记录实践过程、关键命令与结果。
+Record the process, useful commands, and results.
 
-## 小结
+## Takeaways
 
-留下结论和下一步。
+Capture the conclusion and next steps.

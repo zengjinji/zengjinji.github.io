@@ -1,0 +1,156 @@
+[skip_content]
+other = "Skip to content"
+
+[home]
+other = "Home"
+
+[main_navigation]
+other = "Main navigation"
+
+[articles]
+other = "Articles"
+
+[tags]
+other = "Tags"
+
+[about]
+other = "About"
+
+[switch_language]
+other = "Switch to Chinese"
+
+[subscribe_rss]
+other = "Subscribe via RSS"
+
+[footer_motto]
+other = "Stay curious. Keep writing."
+
+[built_with]
+other = "Built with"
+
+[hosted_on]
+other = "Hosted on"
+
+[hero_eyebrow]
+other = "NOTES ON TECH & EVERYDAY LEARNING"
+
+[hero_title_first]
+other = "Turn hard-won lessons"
+
+[hero_title_second]
+other = "into useful notes."
+
+[hero_description_first]
+other = "Notes on engineering, reading, and everyday learning."
+
+[hero_description_second]
+other = "Document the process. Leave a clearer path for next time."
+
+[start_reading]
+other = "Start reading"
+
+[latest_writing]
+other = "Latest writing"
+
+[latest_eyebrow]
+other = "FROM THE NOTEBOOK"
+
+[all_articles]
+other = "All articles"
+
+[blog_information]
+other = "About the blog"
+
+[hello_im]
+other = "HELLO, I'M"
+
+[about_blurb]
+other = "A small space to organize ideas, document the process, and keep what I learn."
+
+[about_blog]
+other = "About this blog"
+
+[explore_tags]
+other = "Explore by tag"
+
+[subscribe_heading]
+other = "Keep up with new posts"
+
+[subscribe_description]
+other = "Follow new posts in your favorite RSS reader."
+
+[topics_eyebrow]
+other = "TOPICS"
+
+[topic_eyebrow]
+other = "TOPIC"
+
+[archive_eyebrow]
+other = "THE ARCHIVE"
+
+[archive_description]
+other = "Notes collected for the next time they come in handy."
+
+[article_list]
+other = "Article list"
+
+[no_articles]
+other = "No articles here yet."
+
+[back_home]
+other = "Back to home"
+
+[example_article]
+other = "Example"
+
+[published_on]
+other = "Published on"
+
+[subscribe_updates]
+other = "Subscribe to future posts"
+
+[adjacent_articles]
+other = "Adjacent articles"
+
+[older_post]
+other = "Older post"
+
+[newer_post]
+other = "Newer post"
+
+[table_of_contents]
+other = "Table of contents"
+
+[on_this_page]
+other = "ON THIS PAGE"
+
+[back_top]
+other = "Back to top"
+
+[pagination]
+other = "Article pagination"
+
+[previous_page]
+other = "Previous"
+
+[next_page]
+other = "Next"
+
+[page_number]
+other = "Page {{ .Current }} of {{ .Total }}"
+
+[not_found]
+other = "NOT FOUND"
+
+[not_found_title]
+other = "This page has yet to be written."
+
+[not_found_description]
+other = "The link may have changed, or you may have taken a wrong turn."
+
+[reading_time]
+other = "{{ .Count }} min read"
+
+[post_count]
+one = "{{ .Count }} post"
+other = "{{ .Count }} posts"

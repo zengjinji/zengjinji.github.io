@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{ .Language.Locale }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,7 @@
   <meta name="author" content="{{ site.Params.author }}">
   <meta name="theme-color" content="#f7f8fa">
   <link rel="canonical" href="{{ .Permalink }}">
+  {{ range .AllTranslations }}<link rel="alternate" hreflang="{{ .Language.Lang }}" href="{{ .Permalink }}">{{ if eq .Language.Lang "en" }}<link rel="alternate" hreflang="x-default" href="{{ .Permalink }}">{{ end }}{{ end }}
   <meta property="og:title" content="{{ .Title | default site.Title }}">
   <meta property="og:description" content="{{ .Description | default site.Params.description }}">
   <meta property="og:url" content="{{ .Permalink }}">
@@ -17,17 +18,18 @@
   {{ range .AlternativeOutputFormats }}<link rel="alternate" type="{{ .MediaType.Type }}" title="{{ site.Title }}" href="{{ .Permalink }}">{{ end }}
 </head>
 <body>
-  <a class="skip-link" href="#main">跳到正文</a>
+  <a class="skip-link" href="#main">{{ i18n "skip_content" }}</a>
   <header class="site-header wrapper">
-    <a class="brand" href="{{ site.Home.RelPermalink }}" aria-label="zengjinji 首页"><span class="brand-mark">zj<span>.</span></span><span>zengjinji<span class="brand-sub"> / 技术手记</span></span></a>
-    <nav aria-label="主导航">
-      <a {{ if or .IsHome (eq .Section "posts") }}aria-current="page"{{ end }} href="{{ "posts/" | relURL }}">文章</a>
-      <a {{ if eq .Section "tags" }}aria-current="page"{{ end }} href="{{ "tags/" | relURL }}">标签</a>
-      <a {{ if eq .RelPermalink "/about/" }}aria-current="page"{{ end }} href="{{ "about/" | relURL }}">关于</a>
-      <a class="rss-link" href="{{ "index.xml" | relURL }}" aria-label="RSS 订阅">RSS <span aria-hidden="true">↗</span></a>
+    <a class="brand" href="{{ site.Home.RelPermalink }}" aria-label="zengjinji · {{ i18n "home" }}"><span class="brand-mark">zj<span>.</span></span><span>zengjinji<span class="brand-sub"> / {{ site.Params.subtitle }}</span></span></a>
+    <nav aria-label="{{ i18n "main_navigation" }}">
+      <a {{ if or .IsHome (eq .Section "posts") }}aria-current="page"{{ end }} href="{{ "posts/" | relLangURL }}">{{ i18n "articles" }}</a>
+      <a {{ if eq .Section "tags" }}aria-current="page"{{ end }} href="{{ "tags/" | relLangURL }}">{{ i18n "tags" }}</a>
+      <a {{ if eq .RelPermalink ("about/" | relLangURL) }}aria-current="page"{{ end }} href="{{ "about/" | relLangURL }}">{{ i18n "about" }}</a>
+      {{ partial "language-switch.html" . }}
+      <a class="rss-link" href="{{ "index.xml" | relLangURL }}" aria-label="{{ i18n "subscribe_rss" }}">RSS <span aria-hidden="true">↗</span></a>
     </nav>
   </header>
   <main id="main" class="wrapper">{{ block "main" . }}{{ end }}</main>
-  <footer class="site-footer wrapper"><span>© {{ now.Year }} zengjinji<span class="footer-sep"> · </span>保持好奇，持续记录。</span><span>由 <a href="https://gohugo.io/">Hugo</a> 构建 · <a href="https://pages.github.com/">GitHub Pages</a> 托管</span></footer>
+  <footer class="site-footer wrapper"><span>© {{ now.Year }} zengjinji<span class="footer-sep"> · </span>{{ i18n "footer_motto" }}</span><span>{{ i18n "built_with" }} <a href="https://gohugo.io/">Hugo</a> · {{ i18n "hosted_on" }} <a href="https://pages.github.com/">GitHub Pages</a></span></footer>
 </body>
 </html>

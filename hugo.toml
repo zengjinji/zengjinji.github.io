@@ -1,11 +1,30 @@
 baseURL = 'https://zengjinji.github.io/'
-locale = 'zh-CN'
-defaultContentLanguage = 'zh-cn'
-title = 'zengjinji · 技术手记'
+defaultContentLanguage = 'en'
+defaultContentLanguageInSubdir = false
+title = 'zengjinji · Technical Notes'
 timeZone = 'Asia/Shanghai'
-hasCJKLanguage = true
 enableRobotsTXT = true
 summaryLength = 100
+
+[languages]
+  [languages.en]
+    label = 'English'
+    locale = 'en-US'
+    title = 'zengjinji · Technical Notes'
+    weight = 1
+    hasCJKLanguage = false
+    [languages.en.params]
+      subtitle = 'Technical Notes'
+      description = 'Notes on engineering, reading, and everyday learning.'
+  [languages.zh]
+    label = '中文'
+    locale = 'zh-CN'
+    title = 'zengjinji · 技术手记'
+    weight = 2
+    hasCJKLanguage = true
+    [languages.zh.params]
+      subtitle = '技术手记'
+      description = '记录技术实践、阅读笔记与日常思考。'
 
 [pagination]
   pagerSize = 8
@@ -18,7 +37,6 @@ summaryLength = 100
 
 [params]
   author = 'zengjinji'
-  description = '记录技术实践、阅读笔记与日常思考。'
   github = 'https://github.com/zengjinji'
 
 [markup]

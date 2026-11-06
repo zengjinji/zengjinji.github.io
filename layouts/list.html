@@ -1,8 +1,8 @@
 {{ define "main" }}
-<section class="page-heading"><p class="eyebrow">{{ if eq .Kind "taxonomy" }}TOPICS{{ else if eq .Kind "term" }}TOPIC{{ else }}THE ARCHIVE{{ end }}</p><h1>{{ .Title }}</h1><p>{{ .Description | default "把零散的思考整理成篇，留给下一次需要的时候。" }}</p></section>
+<section class="page-heading"><p class="eyebrow">{{ if eq .Kind "taxonomy" }}{{ i18n "topics_eyebrow" }}{{ else if eq .Kind "term" }}{{ i18n "topic_eyebrow" }}{{ else }}{{ i18n "archive_eyebrow" }}{{ end }}</p><h1>{{ .Title }}</h1><p>{{ .Description | default (i18n "archive_description") }}</p></section>
 {{ if eq .Kind "taxonomy" }}
-<div class="term-grid">{{ range .Pages.ByTitle }}<a class="term-card" href="{{ .RelPermalink }}"><span># {{ .LinkTitle }}</span><span>{{ len .RegularPages }} 篇 <span aria-hidden="true">↗</span></span></a>{{ end }}</div>
+<div class="term-grid">{{ range .Pages.ByTitle }}<a class="term-card" href="{{ .RelPermalink }}"><span># {{ .LinkTitle }}</span><span>{{ i18n "post_count" (dict "Count" (len .RegularPages)) }} <span aria-hidden="true">↗</span></span></a>{{ end }}</div>
 {{ else }}
-<section class="archive-posts" aria-label="文章列表">{{ $paginator := .Paginate .RegularPages.ByDate.Reverse }}{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ else }}<p>这里还没有文章。先去<a href="{{ site.Home.RelPermalink }}">首页</a>看看吧。</p>{{ end }}{{ partial "pagination.html" $paginator }}</section>
+<section class="archive-posts" aria-label="{{ i18n "article_list" }}">{{ $paginator := .Paginate .RegularPages.ByDate.Reverse }}{{ range $paginator.Pages }}{{ partial "post-card.html" . }}{{ else }}<p>{{ i18n "no_articles" }} <a href="{{ site.Home.RelPermalink }}">{{ i18n "back_home" }}</a></p>{{ end }}{{ partial "pagination.html" $paginator }}</section>
 {{ end }}
 {{ end }}

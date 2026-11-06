@@ -1,5 +1,5 @@
 <article class="post-card">
-  <div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "2006.01.02" }}</time><span aria-hidden="true">/</span><span>{{ .ReadingTime }} 分钟阅读</span>{{ if .Params.example }}<span class="example-badge">示例</span>{{ end }}</div>
+  <div class="post-meta"><time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date | time.Format ":date_medium" }}</time><span aria-hidden="true">/</span><span>{{ i18n "reading_time" (dict "Count" .ReadingTime) }}</span>{{ if .Params.example }}<span class="example-badge">{{ i18n "example_article" }}</span>{{ end }}</div>
   <h3><a href="{{ .RelPermalink }}">{{ .Title }}<span class="post-arrow" aria-hidden="true">↗</span></a></h3>
   <p>{{ .Description | default (.Summary | plainify) }}</p>
   <div class="post-tags">{{ range .GetTerms "tags" }}<a href="{{ .RelPermalink }}"># {{ .LinkTitle }}</a>{{ end }}</div>

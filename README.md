@@ -1,6 +1,6 @@
-# zengjinji · 技术手记
+# zengjinji · Technical Notes / 技术手记
 
-Hugo 中文博客源码。目标地址：<https://zengjinji.github.io/>。
+Hugo 中英文博客源码。默认英文首页：<https://zengjinji.github.io/>；中文首页：<https://zengjinji.github.io/zh/>。
 
 - 本地源码目录：`/root/github/hugo`
 - GitHub 仓库：<https://github.com/zengjinji/zengjinji.github.io>
@@ -27,16 +27,31 @@ ssh -L 1313:127.0.0.1:1313 root@你的服务器地址
 
 首次运行会下载官方 Hugo 并验证 SHA-256，程序只安装在本站 `.tools/hugo`，不修改系统环境。当前机器为 Linux x86_64。
 
+## 中英文版本
+
+导航栏的 **About / 关于** 右侧有语言切换按钮。首页、文章、归档、标签和关于页面会切换到对应页面的另一语言；某页尚未翻译时，按钮回到目标语言首页。默认英文由网址决定，不会根据浏览器语言自动跳转。
+
+- `index.en.md` 是英文文章，`index.zh.md` 是中文文章，同放在一个文章目录中。
+- 同一目录下的 `images/` 由两种语言共用，不用重复保存图片。
+- `content/about.en.md`、`content/about.zh.md` 是关于页面。
+- `i18n/en.toml`、`i18n/zh.toml` 保存界面文案。
+- `hugo.toml` 的 `languages` 保存语言、站点标题和简介。
+- 标签内部名称建议保持英文且两种语言一致；如需中文显示名，在 `content/tags/<tag>/_index.zh.md` 中设置 `title`，参考 `troubleshooting`。
+- 英文 RSS 为 `/index.xml`，中文 RSS 为 `/zh/index.xml`。
+
+现有文章：[English](https://zengjinji.github.io/posts/luajit-arm64-infinite-loop/) · [中文](https://zengjinji.github.io/zh/posts/luajit-arm64-infinite-loop/)。
+
 ## 新建文章
 
 ```bash
 cd /root/github/hugo
-./scripts/hugo.sh new content posts/my-first-note/index.md
+./scripts/hugo.sh new content posts/my-first-note/index.en.md
+./scripts/hugo.sh new content posts/my-first-note/index.zh.md
 ```
 
-编辑 `content/posts/my-first-note/index.md`，修改标题、简介、标签与正文。发布前将 `draft = true` 改为 `draft = false`，并检查日期没有设在未来。`slug` 决定文章网址，建议使用英文和连字符。
+分别编辑 `content/posts/my-first-note/index.en.md` 与 `index.zh.md`，修改标题、简介、标签与正文。发布前将 `draft = true` 改为 `draft = false`，并检查日期没有设在未来。`slug` 决定文章网址，建议使用英文和连字符。
 
-图片可放到文章的 `index.md` 旁，用 `![图片说明](example.png)` 引用。
+图片可放到文章的 `index.en.md` 与 `index.zh.md` 旁，用 `![图片说明](example.png)` 引用。
 
 ## 首次启用 GitHub Pages
 
@@ -55,7 +70,7 @@ cd /root/github/hugo
 # 先预览和构建
 ./scripts/hugo.sh --gc --minify --panicOnWarning
 # 仅暂存本次需要发布的文件
-git add content hugo.toml layouts static scripts .github .hugo-version .gitignore README.md
+git add content i18n archetypes hugo.toml layouts static scripts .github .hugo-version .gitignore README.md
 git commit -m "Update blog"
 ./scripts/publish.sh
 ```
@@ -88,8 +103,8 @@ GitHub 云端构建不使用本地代理地址。网页资源均位于本站，�
 | 要改什么 | 文件或目录 |
 | --- | --- |
 | 标题、描述、作者、网址 | `hugo.toml` |
-| 首页文字 | `layouts/home.html` |
-| 关于页面 | `content/about.md` |
+| 界面与首页文字 | `i18n/en.toml`、`i18n/zh.toml` |
+| 关于页面 | `content/about.en.md`、`content/about.zh.md` |
 | 文章 | `content/posts/` |
 | 样式 | `static/css/main.css` |
 | 网站图标 | `static/favicon.svg` |

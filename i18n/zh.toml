@@ -1,0 +1,155 @@
+[skip_content]
+other = "跳到正文"
+
+[home]
+other = "首页"
+
+[main_navigation]
+other = "主导航"
+
+[articles]
+other = "文章"
+
+[tags]
+other = "标签"
+
+[about]
+other = "关于"
+
+[switch_language]
+other = "切换到英文"
+
+[subscribe_rss]
+other = "订阅 RSS"
+
+[footer_motto]
+other = "保持好奇，持续记录。"
+
+[built_with]
+other = "基于"
+
+[hosted_on]
+other = "托管于"
+
+[hero_eyebrow]
+other = "技术实践 · 日常学习"
+
+[hero_title_first]
+other = "把折腾的过程，"
+
+[hero_title_second]
+other = "写成可复用的经验。"
+
+[hero_description_first]
+other = "记录技术实践、阅读笔记与日常思考。"
+
+[hero_description_second]
+other = "让遇到的问题有迹可循，让学到的东西慢慢沉淀。"
+
+[start_reading]
+other = "开始阅读"
+
+[latest_writing]
+other = "最近的记录"
+
+[latest_eyebrow]
+other = "持续记录"
+
+[all_articles]
+other = "全部文章"
+
+[blog_information]
+other = "博客信息"
+
+[hello_im]
+other = "你好，我是"
+
+[about_blurb]
+other = "这里是一方用来整理思路的小空间。写下过程，也留下答案。"
+
+[about_blog]
+other = "关于这个博客"
+
+[explore_tags]
+other = "按标签探索"
+
+[subscribe_heading]
+other = "让新文章来找你"
+
+[subscribe_description]
+other = "用你喜欢的 RSS 阅读器，订阅这里的更新。"
+
+[topics_eyebrow]
+other = "主题索引"
+
+[topic_eyebrow]
+other = "主题"
+
+[archive_eyebrow]
+other = "文章归档"
+
+[archive_description]
+other = "把零散的思考整理成篇，留给下一次需要的时候。"
+
+[article_list]
+other = "文章列表"
+
+[no_articles]
+other = "这里还没有文章。"
+
+[back_home]
+other = "返回首页"
+
+[example_article]
+other = "示例文章"
+
+[published_on]
+other = "写于"
+
+[subscribe_updates]
+other = "订阅后续文章"
+
+[adjacent_articles]
+other = "相邻文章"
+
+[older_post]
+other = "较早的记录"
+
+[newer_post]
+other = "较新的记录"
+
+[table_of_contents]
+other = "文章目录"
+
+[on_this_page]
+other = "本文目录"
+
+[back_top]
+other = "回到顶部"
+
+[pagination]
+other = "文章分页"
+
+[previous_page]
+other = "上一页"
+
+[next_page]
+other = "下一页"
+
+[page_number]
+other = "第 {{ .Current }} / {{ .Total }} 页"
+
+[not_found]
+other = "页面未找到"
+
+[not_found_title]
+other = "这一页，还没有被写下。"
+
+[not_found_description]
+other = "链接可能已经变更，也可能只是走错了路。"
+
+[reading_time]
+other = "{{ .Count }} 分钟阅读"
+
+[post_count]
+other = "{{ .Count }} 篇"
